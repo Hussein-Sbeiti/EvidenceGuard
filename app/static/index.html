@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Local Vulnerability Scanner</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: #e5e7eb;
+        background: #0b1020;
+        font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; }
+      main { width: min(980px, calc(100% - 32px)); margin: 56px auto; }
+      .eyebrow { color: #78e2bd; font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { margin: 12px 0; font-size: clamp(2rem, 6vw, 3.6rem); letter-spacing: -.05em; }
+      .intro, .notice { color: #aab4ca; line-height: 1.65; }
+      .panel { margin-top: 28px; padding: 28px; border: 1px solid #29334b; border-radius: 20px; background: #11182a; }
+      .dropzone { display: grid; min-height: 210px; place-content: center; gap: 12px; text-align: center; border: 2px dashed #465574; border-radius: 14px; background: #0d1424; transition: border-color .2s, background .2s; }
+      .dropzone.dragging { border-color: #78e2bd; background: #14251f; }
+      .dropzone strong { font-size: 1.15rem; }
+      .muted { color: #9aa8c2; font-size: .92rem; }
+      .buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+      button, .button { border: 0; border-radius: 9px; padding: 11px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+      button.primary { color: #08251a; background: #78e2bd; }
+      button.secondary { color: #e5e7eb; background: #26324a; }
+      button:disabled { opacity: .55; cursor: wait; }
+      input[type=file] { display: none; }
+      #selected, #status { margin-top: 16px; color: #aab4ca; overflow-wrap: anywhere; }
+      #status.error { color: #ff9a9a; }
+      .results { margin-top: 24px; }
+      .summary { color: #aab4ca; margin-bottom: 14px; }
+      .finding { margin: 12px 0; padding: 18px; border: 1px solid #29334b; border-left: 4px solid #f2c56b; border-radius: 12px; background: #11182a; }
+      .finding.high { border-left-color: #ff7979; }
+      .finding.medium { border-left-color: #f2c56b; }
+      .finding h3 { margin: 0 0 8px; }
+      .meta { color: #aab4ca; font-size: .88rem; }
+      code { color: #b7f4df; overflow-wrap: anywhere; }
+      pre { padding: 12px; border-radius: 8px; overflow-x: auto; color: #b7f4df; background: #090e19; }
+      .empty { color: #b7f4df; }
+      .notice { margin-top: 24px; font-size: .9rem; }
+      @media (max-width: 600px) { main { margin-top: 32px; } .panel { padding: 18px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Local-first · Source stays on this machine</div>
+      <h1>Vulnerability Scanner</h1>
+      <p class="intro">Upload source files or a folder to check for common risky coding patterns. Review each finding and suggested mitigation before changing your code.</p>
+
+      <section class="panel" aria-label="Upload source code">
+        <div class="dropzone" id="dropzone" role="region" aria-label="Drop source files here">
+          <strong>Drop source files or a folder here</strong>
+          <span class="muted">Python, JavaScript/TypeScript, Java, C/C++, Go, C#, PHP, and Ruby</span>
+          <div class="buttons">
+            <button class="secondary" id="chooseFiles" type="button">Choose files</button>
+            <button class="secondary" id="chooseFolder" type="button">Choose folder</button>
+          </div>
+          <input id="fileInput" type="file" multiple>
+          <input id="folderInput" type="file" multiple webkitdirectory directory>
+        </div>
+        <div id="selected" aria-live="polite">No files selected.</div>
+        <div class="buttons" style="margin-top: 16px">
+          <button class="primary" id="scanButton" type="button" disabled>Scan selected files</button>
+        </div>
+        <div id="status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="results" id="results" aria-live="polite"></section>
+      <p class="notice">This school-project MVP uses a small offline pattern catalog—not a complete vulnerability database or an AI model. Results can be false positives or miss vulnerabilities; this is not a substitute for a security review. Files are analyzed in memory and are not saved by the server.</p>
+    </main>
+    <script>
+      const fileInput = document.querySelector("#fileInput");
+      const folderInput = document.querySelector("#folderInput");
+      const dropzone = document.querySelector("#dropzone");
+      const selected = document.querySelector("#selected");
+      const scanButton = document.querySelector("#scanButton");
+      const status = document.querySelector("#status");
+      const results = document.querySelector("#results");
+      let chosenFiles = [];
+
+      document.querySelector("#chooseFiles").addEventListener("click", () => fileInput.click());
+      document.querySelector("#chooseFolder").addEventListener("click", () => folderInput.click());
+
+      function selectFiles(files) {
+        chosenFiles = [...files].filter((file) => file.size <= 512 * 1024);
+        const rejected = files.length - chosenFiles.length;
+        selected.textContent = chosenFiles.length
+          ? `${chosenFiles.length} file(s) selected${rejected ? `; ${rejected} file(s) over 512 KB skipped` : ""}.`
+          : "No supported-size files selected.";
+        scanButton.disabled = chosenFiles.length === 0;
+        status.textContent = "";
+        status.className = "";
+        results.replaceChildren();
+      }
+
+      fileInput.addEventListener("change", () => selectFiles(fileInput.files));
+      folderInput.addEventListener("change", () => selectFiles(folderInput.files));
+      for (const eventName of ["dragenter", "dragover"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("dragging");
+        });
+      }
+      for (const eventName of ["dragleave", "drop"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("dragging");
+        });
+      }
+      dropzone.addEventListener("drop", (event) => selectFiles(event.dataTransfer.files));
+
+      function addText(parent, tag, text, className) {
+        const element = document.createElement(tag);
+        element.textContent = text;
+        if (className) element.className = className;
+        parent.append(element);
+        return element;
+      }
+
+      function renderFindings(data) {
+        results.replaceChildren();
+        const summary = data.summary;
+        addText(results, "p", `${summary.files_scanned} file(s) scanned · ${summary.findings} finding(s) · ${summary.high} high · ${summary.medium} medium`, "summary");
+        if (!data.findings.length) {
+          addText(results, "p", "No matches in the current rule catalog. This does not prove the code is secure.", "empty");
+          return;
+        }
+        for (const finding of data.findings) {
+          const card = document.createElement("article");
+          card.className = `finding ${finding.severity}`;
+          addText(card, "h3", finding.title);
+          addText(card, "p", `${finding.file}:${finding.line} · ${finding.severity.toUpperCase()} · ${finding.rule_id} · ${finding.cwe}`, "meta");
+          addText(card, "p", finding.description);
+          addText(card, "p", `Suggested mitigation: ${finding.recommendation}`);
+          addText(card, "pre", finding.evidence);
+          addText(card, "p", "Example direction (review and adapt):");
+          addText(card, "pre", finding.fix_example);
+          results.append(card);
+        }
+      }
+
+      scanButton.addEventListener("click", async () => {
+        const body = new FormData();
+        for (const file of chosenFiles) {
+          const relativePath = file.webkitRelativePath || file.name;
+          body.append("files", file, relativePath);
+        }
+        scanButton.disabled = true;
+        status.textContent = "Scanning locally…";
+        status.className = "";
+        try {
+          const response = await fetch("/api/scan", { method: "POST", body });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Scan failed.");
+          renderFindings(data);
+          status.textContent = data.notice;
+        } catch (error) {
+          status.textContent = error.message || "Unable to complete scan.";
+          status.className = "error";
+        } finally {
+          scanButton.disabled = chosenFiles.length === 0;
+        }
+      });
+    </script>
+  </body>
+</html>
