@@ -2,6 +2,8 @@
 
 A local web app for uploading source files or folders and checking a small, editable catalog of common risky coding patterns. Findings include a file path, line number, severity, CWE category, explanation, and suggested mitigation.
 
+See [TODO.md](TODO.md) for the project backlog.
+
 ## What this version does
 
 - Runs locally with a FastAPI backend and a browser UI.
