@@ -135,6 +135,19 @@ class IntelligenceTests(unittest.TestCase):
 
 
 class IntegrationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_fix_suggestions_leave_uploaded_source_unchanged(self):
+        source = b"# Preserve original bytes and line endings\r\nvalue = eval(user_input)\r\n"
+        buffer = io.BytesIO(source)
+        with patch.object(buffer, "write", side_effect=AssertionError("Uploaded source must not be rewritten")) as write:
+            result = await scan([UploadFile(filename="original.py", file=buffer)], False)
+        write.assert_not_called()
+        self.assertEqual(buffer.getvalue(), source)
+        finding = result["findings"][0]
+        self.assertEqual(finding["rule_id"], "PY-EVAL")
+        self.assertTrue(finding["recommendation"])
+        self.assertTrue(finding["fix_example"])
+        self.assertEqual(finding["evidence"], "value = eval(user_input)")
+
     async def test_incomplete_python_returns_analysis_warning_and_partial_findings(self):
         source = b'eval(user_input)\nif (\n'
         result = await scan([UploadFile(filename="incomplete.py", file=io.BytesIO(source))], False)

@@ -19,7 +19,7 @@
 - [x] Make online lookups opt-in, explain what is sent, and send package names/versions or identifiers only—not uploaded source code.
 - [x] Cache advisory responses with source, retrieval date, and record identifier so results can be refreshed and traced.
 - [x] Add persistent provider throttling, Retry-After cooldowns, bounded responses, and stale-cache fallback.
-- [ ] Keep fix suggestions as recommendations; do not modify uploaded files automatically.
+- [x] Keep fix suggestions as recommendations; regression test verifies uploaded bytes remain unchanged and the scanner does not write to the upload buffer.
 
 ## App experience and safety
 
