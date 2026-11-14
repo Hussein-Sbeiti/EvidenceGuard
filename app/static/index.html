@@ -69,6 +69,8 @@
           <input id="folderInput" type="file" multiple webkitdirectory directory>
         </div>
         <div id="selected" aria-live="polite">No files selected.</div>
+        <p><label><input id="onlineLookup" type="checkbox"> Look up CVE IDs mentioned in source (optional)</label></p>
+        <p class="muted">Sends only CVE IDs to CVE.org and NVD. Up to 3 IDs per scan; rate limits may defer results. Software and affected versions still need review.</p>
         <div class="buttons" style="margin-top: 16px">
           <button class="primary" id="scanButton" type="button" disabled>Scan selected files</button>
         </div>
@@ -76,6 +78,17 @@
       </section>
 
       <section class="results" id="results" aria-live="polite"></section>
+      <section class="panel" aria-label="Vulnerability database lookup">
+        <h2>Vulnerability database</h2>
+        <form id="lookupForm">
+          <label for="cveInput">CVE ID</label>
+          <input id="cveInput" type="text" placeholder="CVE-2021-44228" required maxlength="28">
+          <button class="secondary" id="lookupButton" type="submit">Look up CVE</button>
+        </form>
+        <p class="muted">Queries CVE.org, NVD, and the configured local Exploit-DB metadata index. Results are references requiring applicability review.</p>
+        <div id="lookupStatus" role="status"></div>
+        <div id="lookupResults" aria-live="polite"></div>
+      </section>
       <p class="notice">Scans run locally. This tool checks a limited set of patterns; it can miss issues or flag safe code. Review findings before making changes.</p>
     </main>
     <script>
@@ -131,6 +144,11 @@
         results.replaceChildren();
         const summary = data.summary;
         addText(results, "p", `${summary.files_scanned} file(s) scanned · ${summary.findings} finding(s) · ${summary.high} high · ${summary.medium} medium`, "summary");
+        addText(results, "p", data.intelligence_notice, "muted");
+        for (const reference of data.intelligence || []) renderIntelligence(results, reference);
+        if (!data.intelligence?.length && Object.keys(data.cve_mentions || {}).length) {
+          addText(results, "p", `CVE mentions (unverified): ${Object.keys(data.cve_mentions).join(", ")}`, "muted");
+        }
         if (!data.findings.length) {
           addText(results, "p", "No matches in the current rule catalog. This does not prove the code is secure.", "empty");
           return;
@@ -173,8 +191,71 @@
         }
       }
 
+      function renderIntelligence(parent, reference) {
+        const card = document.createElement("article");
+        card.className = "finding";
+        addText(card, "h3", `${reference.cve_id} · Applicability unverified`);
+        addText(card, "p", reference.notice, "muted");
+        if (reference.mentions) addText(card, "p", reference.mentions.map(m => `${m.file}:${m.line}`).join(", "), "location");
+        for (const source of reference.sources) {
+          addText(card, "h4", `${source.provider} · ${source.status}`);
+          if (source.retrieved_at) addText(card, "p", `Retrieved: ${new Date(source.retrieved_at * 1000).toLocaleString()}`, "muted");
+          if (source.index_modified_at) addText(card, "p", `Local index modified: ${new Date(source.index_modified_at * 1000).toLocaleString()}`, "muted");
+          if (source.warning) addText(card, "p", source.warning, "muted");
+          if (source.provider === "Exploit-DB") {
+            for (const exploit of source.data || []) {
+              const a = addText(card, "a", `${exploit.id}: ${exploit.title}`);
+              a.href = `https://www.exploit-db.com/exploits/${encodeURIComponent(exploit.id)}`;
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
+              card.append(document.createElement("br"));
+            }
+            if (source.status === "local" && !source.data.length) addText(card, "p", "No exact CVE references in the local index.");
+          } else if (source.data) {
+            addText(card, "p", `Record state: ${source.data.state || "unknown"}`);
+            addText(card, "p", source.data.description);
+            const a = addText(card, "a", `Open ${source.provider} record`);
+            a.href = source.provider === "NVD"
+              ? `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(reference.cve_id)}`
+              : `https://www.cve.org/CVERecord?id=${encodeURIComponent(reference.cve_id)}`;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            const details = document.createElement("details");
+            addText(details, "summary", "Severity and affected version evidence");
+            addText(details, "pre", JSON.stringify({metrics: source.data.metrics, affected: source.data.affected, configurations: source.data.configurations}, null, 2));
+            card.append(details);
+          } else if (["live", "cached", "stale"].includes(source.status)) {
+            addText(card, "p", "No matching record returned by this provider.");
+          }
+        }
+        parent.append(card);
+      }
+
+      document.querySelector("#lookupForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = document.querySelector("#lookupButton");
+        const output = document.querySelector("#lookupResults");
+        const message = document.querySelector("#lookupStatus");
+        button.disabled = true;
+        output.replaceChildren();
+        message.textContent = "Looking up vulnerability records…";
+        try {
+          const cve = document.querySelector("#cveInput").value.trim();
+          const response = await fetch(`/api/intelligence/${encodeURIComponent(cve)}`);
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Lookup failed.");
+          renderIntelligence(output, data);
+          message.textContent = "Lookup completed. Review provider status for partial results.";
+        } catch (error) {
+          message.textContent = error.message || "Lookup unavailable.";
+        } finally {
+          button.disabled = false;
+        }
+      });
+
       scanButton.addEventListener("click", async () => {
         const body = new FormData();
+        body.append("online_lookup", document.querySelector("#onlineLookup").checked);
         for (const file of chosenFiles) {
           const relativePath = file.webkitRelativePath || file.name;
           body.append("files", file, relativePath);

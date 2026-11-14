@@ -9,10 +9,12 @@
 
 ## Useful capabilities
 
-- [ ] Integrate with official vulnerability/advisory APIs, starting with OSV for package versions and NVD for CVE metadata.
-- [ ] Check whether an approved Exploit-DB API or feed is available; if used, retain references and metadata only, not exploit code or payloads.
-- [ ] Make online lookups opt-in, explain what is sent, and send package names/versions or identifiers only—not uploaded source code.
-- [ ] Cache advisory responses with source, retrieval date, and record identifier so results can be refreshed and traced.
+- [x] Integrate CVE.org and NVD for exact CVE metadata lookups.
+- [ ] Add dependency manifest parsing and verified affected-version matching (consider OSV).
+- [x] Integrate the official Exploit-DB CSV index; retain references and metadata only.
+- [x] Make online lookups opt-in, explain what is sent, and send package names/versions or identifiers only—not uploaded source code.
+- [x] Cache advisory responses with source, retrieval date, and record identifier so results can be refreshed and traced.
+- [x] Add persistent provider throttling, Retry-After cooldowns, bounded responses, and stale-cache fallback.
 - [ ] Add an optional local AI model to explain findings; clearly distinguish model output from verified rule results.
 - [ ] Keep fix suggestions as recommendations; do not modify uploaded files automatically.
 
@@ -30,6 +32,7 @@
 
 ## App experience and safety
 
+- [ ] Make the GUI cleaner and easier to use, with a navigation sidebar and slightly darker colors.
 - [ ] Show skipped files and upload limits clearly in the results.
 - [ ] Add a way to export findings as JSON or a readable report.
 - [ ] Review upload limits, error messages, and local-only behavior as features are added.
@@ -38,6 +41,8 @@
 ## Project delivery
 
 - [ ] Document setup and run instructions for Windows, macOS, and Linux.
-- [ ] Add a small, clearly labeled demo project for repeatable scans.
+- [x] Add clearly labeled vulnerable examples and a safe comparison for repeatable scans.
+- [x] Test example uploads through the running website's HTTP endpoints and verify CVE.org, NVD, and Exploit-DB results; document results and limitations in examples/TEST_RESULTS.md.
+- [ ] Complete a manual browser walkthrough of uploads, online lookups, and results.
 - [ ] Record test results and limitations in the school-project presentation.
 - [ ] Push local commits to GitHub after reviewing the diff.
