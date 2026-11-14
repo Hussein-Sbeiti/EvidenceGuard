@@ -21,7 +21,7 @@ class BoundedMultipartParser(MultiPartParser):
     spool_max_size = MAX_FILE_BYTES + 1
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, max_files=MAX_FILES, max_fields=1, max_part_size=4096, **kwargs)
+        super().__init__(*args, max_files=MAX_FILES, max_fields=2, max_part_size=4096, **kwargs)
         self.total_file_bytes = 0
         self.finished = False
 
@@ -48,8 +48,8 @@ class BoundedMultipartParser(MultiPartParser):
         part = self._current_part
         if part.file and part.field_name != "files":
             raise MultiPartException('File parts must use the field name "files".')
-        if not part.file and part.field_name != "online_lookup":
-            raise MultiPartException('Only the optional "online_lookup" text field is supported.')
+        if not part.file and part.field_name not in {"online_lookup", "dependency_lookup"}:
+            raise MultiPartException('Only the optional "online_lookup" and "dependency_lookup" text fields are supported.')
 
     def on_part_data(self, data, start, end):
         if self._current_part.file is not None:
@@ -98,13 +98,16 @@ async def parse_upload(request: Request):
             raise HTTPException(code, error.message) from None
         if not parser.finished:
             raise HTTPException(400, "Incomplete multipart upload. Select the files and try again.")
-        options = form.getlist("online_lookup")
-        if len(options) > 1:
-            raise HTTPException(400, "Provide online_lookup only once.")
-        option = str(options[0]).strip().lower() if options else "false"
-        if option not in {"true", "false", "1", "0"}:
-            raise HTTPException(400, "online_lookup must be true or false.")
-        yield form.getlist("files"), option in {"true", "1"}
+        flags = []
+        for name in ("online_lookup", "dependency_lookup"):
+            options = form.getlist(name)
+            if len(options) > 1:
+                raise HTTPException(400, f"Provide {name} only once.")
+            option = str(options[0]).strip().lower() if options else "false"
+            if option not in {"true", "false", "1", "0"}:
+                raise HTTPException(400, f"{name} must be true or false.")
+            flags.append(option in {"true", "1"})
+        yield form.getlist("files"), *flags
     finally:
         # Also closes unfinished parts, not just entries returned in FormData.
         for buffer in parser._files_to_close_on_error:

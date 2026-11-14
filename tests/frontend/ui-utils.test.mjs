@@ -71,3 +71,25 @@ test("partial-analysis warnings survive readable report export", () => {
   assert.match(text, /ANALYSIS WARNINGS/);
   assert.match(text, /incomplete.py: Python syntax could not be fully analyzed; token-based fallback used/);
 });
+
+test("file selection accepts only named dependency manifests, with existing upload limits", () => {
+  const settings = {...config, manifest_filenames: ["requirements.txt", "package-lock.json"]};
+  const selection = selectUploadFiles([file("requirements.txt", 50), file("package-lock.json", 80), file("notes.txt", 1), file("package.json", 1)], settings);
+  assert.deepEqual(selection.accepted.map(item => item.name), ["requirements.txt", "package-lock.json"]);
+  assert.equal(selection.skipped.length, 2);
+  assert.equal(selection.error, "");
+});
+
+test("dependency reports preserve unresolved entries, package location, status, fixed boundaries, and evidence", () => {
+  const report = {completed_at: "now", summary: {files_scanned: 1, findings: 0, high: 0, medium: 0},
+    files_scanned: [{file: "requirements.txt", lines: 2, kind: "manifest"}], findings: [], intelligence: [],
+    dependency_lookup: true, dependency_notice: "OSV-reported matches need review.",
+    dependencies: [{file: "requirements.txt", location: "line 1", ecosystem: "PyPI", name: "requests", version: "2.0.0", status: "exact"},
+      {file: "requirements.txt", location: "line 2", ecosystem: "PyPI", name: "flask", status: "unresolved", reason: "No exact version"}],
+    dependency_results: [{ecosystem: "PyPI", name: "requests", version: "2.0.0", status: "partial", complete: false,
+      locations: [{file: "requirements.txt", location: "line 1"}], warning: "More pages remain", advisories: [{id: "GHSA-test", url: "https://osv.dev/vulnerability/GHSA-test", summary: "Test", applicability: "osv_reported_version_match", severity: "high", fixed_versions: ["3.0.0"], notice: "Check installation and compatibility.", affected: [{versions: ["2.0.0"]}]}]}],
+    notice: "Read-only suggestions."};
+  const text = buildReadableReport(report);
+  for (const expected of ["requests@2.0.0", "requirements.txt · line 1", "unresolved", "No exact version", "OSV: partial", "More pages remain", "3.0.0", "Affected-version evidence", "Check installation"]) assert.ok(text.includes(expected), `Missing ${expected}`);
+  assert.ok(!text.includes("No advisories returned for this completed query"));
+});

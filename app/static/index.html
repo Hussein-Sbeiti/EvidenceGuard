@@ -26,7 +26,7 @@
         <header class="page-header"><p class="eyebrow">START A REVIEW</p><h1 id="scanTitle" tabindex="-1">Scan your source.</h1><p class="intro">Find risky code patterns, understand the issue, and review a suggested fix.</p></header>
         <div class="scan-layout">
           <section class="panel upload-panel" aria-labelledby="uploadTitle">
-            <div class="panel-heading"><h2 id="uploadTitle">Source files</h2><span class="step-label">STEP 1</span></div>
+            <div class="panel-heading"><h2 id="uploadTitle">Source files &amp; manifests</h2><span class="step-label">STEP 1</span></div>
             <div class="dropzone" id="dropzone" role="region" aria-label="Drop source files here">
               <span class="upload-symbol" aria-hidden="true">↑</span>
               <strong>Drop source files here</strong>
@@ -41,13 +41,15 @@
             <div class="scan-options"><div class="panel-heading"><h2>Database references</h2><span class="step-label">OPTIONAL</span></div>
               <label class="checkbox-row"><input id="onlineLookup" type="checkbox"><span><strong>Look up CVE IDs mentioned in source</strong><span class="muted">Send only CVE IDs to CVE.org and NVD. Source code stays local.</span></span></label>
               <p id="lookupLimit" class="muted">References require software and affected-version review.</p>
+              <label class="checkbox-row dependency-option"><input id="dependencyLookup" type="checkbox"><span><strong>Check pinned dependencies with OSV</strong><span class="muted">Send package ecosystems, names (including private names), and exact versions to OSV. Manifest contents, paths, URLs, and credentials stay local.</span></span></label>
+              <p id="dependencyLimit" class="muted">requirements.txt and package-lock.json are parsed locally even when online checks are off.</p>
             </div>
             <div class="scan-actions"><button class="primary" id="scanButton" type="button" disabled>Scan selected files <span aria-hidden="true">→</span></button><span class="muted">Files are read in memory.</span></div>
             <p id="status" role="status" aria-live="polite"></p>
           </section>
           <aside class="guide" aria-label="Scan guidance"><p class="eyebrow">WHAT TO EXPECT</p><h2>A clear starting point for review.</h2>
             <ol><li><strong>Choose your code</strong><p>Upload source files or select a project folder.</p></li><li><strong>Review the findings</strong><p>See the file, line, weakness, and a suggested mitigation.</p></li><li><strong>Keep a report</strong><p>Download the results for follow-up or your project notes.</p></li></ol>
-            <div class="supported"><h3>Supported languages</h3><p>Python · JavaScript · TypeScript · Java · C/C++ · C# · Go · PHP · Ruby</p></div>
+            <div class="supported"><h3>Source and dependency inputs</h3><p>Manifests: requirements.txt · package-lock.json</p><p>Python · JavaScript · TypeScript · Java · C/C++ · C# · Go · PHP · Ruby</p></div>
             <p class="notice">This scanner checks a limited set of patterns. Findings need human review, and a clean scan does not prove the code is secure.</p>
           </aside>
         </div>
@@ -62,6 +64,13 @@
           <details id="scanFiles" class="panel compact-panel"><summary id="scanFilesSummary">Files in this scan</summary><ul id="scanFilesList" class="file-list"></ul></details>
           <div id="analysisWarnings" class="analysis-warnings" role="status" hidden></div>
           <section aria-labelledby="findingsTitle"><div class="section-heading"><h2 id="findingsTitle">Code findings</h2><label class="filter-label" for="severityFilter">Severity <select id="severityFilter"><option value="all">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label></div><p class="muted">CWE (Common Weakness Enumeration) names describe the kind of software weakness.</p><div id="results" aria-live="polite"></div></section>
+          <section id="dependenciesSection" class="reference-section" aria-labelledby="dependenciesTitle" hidden>
+            <div class="section-heading"><h2 id="dependenciesTitle">Dependency review</h2><span class="badge">OSV-reported matches</span></div>
+            <p id="dependencySummary" class="summary"></p><p id="dependencyNotice" class="muted"></p>
+            <div id="manifestIssues" role="status"></div>
+            <details id="dependencyInventoryDetails" class="panel compact-panel"><summary>Manifest inventory and unresolved entries</summary><ul id="dependencyInventory" class="file-list"></ul></details>
+            <div id="dependencyResults"></div>
+          </section>
           <section class="reference-section" aria-labelledby="referencesTitle"><div class="section-heading"><h2 id="referencesTitle">Database references</h2><span class="badge">Applicability unverified</span></div><p id="intelligenceNotice" class="muted"></p><div id="scanReferences"></div></section>
           <p id="scanNotice" class="notice"></p>
         </div>

@@ -1,4 +1,5 @@
 import {selectUploadFiles, formatBytes, buildReadableReport, apiErrorMessage} from "./ui-utils.mjs";
+import {renderDependencies} from "./dependency-ui.js";
 
 const $ = selector => document.querySelector(selector);
 const fileInput = $("#fileInput");
@@ -45,6 +46,7 @@ function updateScanControls() {
   $("#chooseFiles").disabled = scanning || !config;
   $("#chooseFolder").disabled = scanning || !config;
   $("#onlineLookup").disabled = scanning;
+  $("#dependencyLookup").disabled = scanning;
   scanButton.textContent = scanning ? "Scanning…" : "Scan selected files →";
 }
 
@@ -70,7 +72,7 @@ function selectFiles(files) {
   for (const file of selection.skipped) appendFile(list, file.file, `Skipped: ${file.reason}`);
   $("#selectionDetails").hidden = !list.childElementCount;
   $("#selectionDetails").open = Boolean(skipped || selection.error);
-  setStatus(status, selection.error || (!selection.accepted.length ? "Choose supported source files. Use Choose folder to select a project directory." : ""), Boolean(selection.error));
+  setStatus(status, selection.error || (!selection.accepted.length ? "Choose supported source files or manifests. Use Choose folder to select a project directory." : ""), Boolean(selection.error));
   lastReport = null;
   $("#reportContent").hidden = true;
   $("#resultsEmpty").hidden = false;
@@ -99,9 +101,10 @@ async function loadConfig() {
     const response = await fetch("/api/config");
     if (!response.ok) throw new Error("Unable to load scanner settings. Refresh the page to try again.");
     config = await response.json();
-    fileInput.accept = config.supported_extensions.join(",");
+    fileInput.accept = [...new Set([...config.supported_extensions, ...(config.manifest_filenames || []).map(name => name.slice(name.lastIndexOf(".")))])].join(",");
     $("#uploadLimits").textContent = `Up to ${config.limits.files} supported files · ${formatBytes(config.limits.file_bytes)} per file · ${formatBytes(config.limits.total_bytes)} total`;
     $("#lookupLimit").textContent = `Up to ${config.max_cve_lookups} CVE IDs per scan. Rate limits may defer results; affected versions still need review.`;
+    $("#dependencyLimit").textContent = `Manifests are parsed locally. Online OSV checks use at most ${config.max_osv_requests} requests in ${config.max_osv_seconds}s; cached checks do not use this request budget. Unchecked packages remain visible.`;
     updateScanControls();
   } catch (error) {
     $("#uploadLimits").textContent = "Upload settings unavailable.";
@@ -117,7 +120,7 @@ function renderFindings() {
   const severity = $("#severityFilter").value;
   const findings = lastReport.findings.filter(finding => severity === "all" || finding.severity === severity);
   if (!findings.length) {
-    addText(parent, "p", lastReport.findings.length ? "No findings match this severity. Choose another filter to see the rest of the report." : "No matches in the current rule catalog. This does not prove the code is secure.", "empty");
+    addText(parent, "p", lastReport.findings.length ? "No findings match this severity. Choose another filter to see the rest of the report." : lastReport.files_scanned.every(file => file.kind === "manifest") ? "No source code files were included. See the dependency review below." : "No matches in the current rule catalog. This does not prove the code is secure.", "empty");
     return;
   }
   for (const finding of findings) {
@@ -201,7 +204,7 @@ function renderReport(data) {
   const stats = $("#summaryStats");
   stats.replaceChildren();
   for (const [value, label] of [
-    [data.summary.files_scanned, "Files scanned"], [data.summary.findings, "Total findings"],
+    [data.summary.files_scanned, "Files scanned"], [data.summary.findings, "Code findings"],
     [(data.summary.high || 0) + (data.summary.critical || 0), "High / critical"], [data.summary.medium || 0, "Medium"],
   ]) {
     const stat = document.createElement("div");
@@ -223,13 +226,14 @@ function renderReport(data) {
   if (!warnings.hidden) addText(warnings, "h2", "Some files need closer review");
   for (const warning of data.analysis_warnings || []) addText(warnings, "p", `${warning.file}: ${warning.message}`);
   renderFindings();
+  renderDependencies(data);
   $("#intelligenceNotice").textContent = data.intelligence_notice;
   const references = $("#scanReferences");
   references.replaceChildren();
   for (const reference of data.intelligence || []) renderIntelligence(references, reference);
   if (!data.intelligence?.length && Object.keys(data.cve_mentions || {}).length) addText(references, "p", `CVE mentions (unverified): ${Object.keys(data.cve_mentions).join(", ")}`, "muted");
   $("#scanNotice").textContent = data.notice;
-  $("#navCount").textContent = String(data.summary.findings);
+  $("#navCount").textContent = String(data.summary.findings + (data.dependency_summary?.advisories || 0));
   $("#navCount").hidden = false;
   $("#exportJson").disabled = false;
   $("#exportText").disabled = false;
@@ -239,6 +243,7 @@ scanButton.addEventListener("click", async () => {
   if (scanning || !selection.accepted.length || selection.error || !config) return;
   const body = new FormData();
   body.append("online_lookup", $("#onlineLookup").checked);
+  body.append("dependency_lookup", $("#dependencyLookup").checked);
   for (const file of selection.accepted) body.append("files", file, file.webkitRelativePath || file.name);
   scanning = true;
   updateScanControls();

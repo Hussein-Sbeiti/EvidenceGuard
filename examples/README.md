@@ -49,7 +49,10 @@ four files listed above to reproduce the counts. The SQL rule now reports one hi
 PY-SQL-INJECTION finding (CWE-89) at line 18, where the interpolated query reaches
 `db.execute(query)`. The former credential false positive remains fixed. Upload
 this file separately to test SQL detection. Selecting all five source fixtures
-produces 10 findings: 5 high and 5 medium. Zero findings in `safe_patterns.py` is a comparison for this small rule
+produces 10 code findings: 5 high and 5 medium. The separate manifests under
+`examples/dependencies/` exercise dependency inventory and OSV queries; see
+[dependency test steps](../docs/DEPENDENCY_SCANNING.md#try-the-fixtures). Do not
+install the historical fixture packages. Zero findings in `safe_patterns.py` is a comparison for this small rule
 catalog, not a security guarantee.
 
 To start this server again from the project root:

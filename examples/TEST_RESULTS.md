@@ -90,3 +90,30 @@ See `docs/UPLOAD_REVIEW.md` for the enforced boundaries and practical limits.
 Actual responsive, keyboard, and browser download checks remain pending in
 `docs/BROWSER_QA.md`: browser control reported that its access host was
 unavailable. No browser interaction is represented as a passing check.
+
+## Dependency inventory and OSV verification
+
+All 96 backend tests and 9 frontend utility tests pass after adding manifest
+inventory and separately opted-in OSV queries. Coverage includes Python pins,
+markers, extras, hashes, ranges, conflicts, URL/registry privacy, npm lockfile
+v1/v2/v3 structures, scoped names, aliases, nested/optional/dev entries, malformed
+JSON, cache corruption, pagination/resumption, advisory caps, stale fallback,
+Retry-After cooldowns, and the two independent upload opt-in fields.
+
+A live upload of the two `examples/dependencies/` fixtures first ran offline:
+2 manifests, 5 inventory entries, 3 exact pins, 2 unresolved entries, no code
+findings, and disabled OSV queries. With dependency lookup enabled, OSV returned
+10 records for requests 2.19.1, 2 for PyYAML 5.3.1, and 5 for lodash 4.17.15 at
+test time. The Flask range and local workspace link were not queried. The PyYAML
+environment marker remained conditional rather than being evaluated on the host.
+
+Those 17 advisory records are not 17 independently confirmed exploitable
+vulnerabilities. Record aliases may overlap, and installation/applicability still
+needs review. The live responses preserved matching affected ranges and reported
+fixed boundaries; the text export was generated from these responses and checked
+for version, location, marker, unresolved-entry, and affected-evidence content.
+Provider feeds and returned record counts can change. No package was installed
+from the fixtures, no source/manifest was modified, and no NVD key was sent to OSV.
+
+The new UI and dependency download interaction remain part of the pending browser
+walkthrough; endpoint and formatter tests are not visual/browser verification.

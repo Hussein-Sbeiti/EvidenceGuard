@@ -5,7 +5,7 @@ calls to the scan helper. The tests are in `tests/test_web_boundaries.py`.
 
 ## Enforced boundaries
 
-- At most 50 file parts and one optional `online_lookup` field.
+- At most 50 file parts and two optional boolean fields: `online_lookup` and `dependency_lookup`.
 - At most 512 KB per file and 5 MB combined file bytes, including unsupported
   files that will later be skipped. Exact boundaries are accepted.
 - At most 5 MB + 256 KB of raw multipart body. Both Content-Length and streamed
@@ -38,7 +38,7 @@ multi-user authenticated service or a reverse-proxy deployment.
 
 Offline scanning is the default. Same-origin tests confirm that CVE mentions do
 not call the intelligence provider without opt-in. API keys stay server-side;
-only CVE identifiers are used in the configured online lookups. JSON and text
+CVE lookup sends only CVE identifiers; the separate OSV opt-in sends package ecosystems, names, and exact versions (plus opaque pagination tokens when needed). Manifests, paths, registry URLs, and credentials stay local. JSON and text
 exports contain flagged source excerpts and should be reviewed before sharing.
 
 ## Practical limits

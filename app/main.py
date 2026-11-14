@@ -9,11 +9,14 @@ from app.intelligence import CVE_PATTERN, MAX_LOOKUPS, Intelligence, validate_cv
 from app.scanner import SUPPORTED_EXTENSIONS, analyze_source, display_filename
 from app.uploads import MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, parse_upload
 from app.local_access import LocalOnlyMiddleware
+from app.manifests import MANIFEST_FILENAMES, MAX_SCAN_ENTRIES, is_manifest, parse_manifest
+from app.dependency_intelligence import DependencyIntelligence, MAX_OSV_REQUESTS, MAX_OSV_SECONDS
 
 
 app = FastAPI(title="Local Vulnerability Scanner")
 app.add_middleware(LocalOnlyMiddleware)
 intelligence = Intelligence()
+dependency_intelligence = DependencyIntelligence(intelligence)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -33,6 +36,10 @@ async def configuration() -> dict[str, object]:
         "limits": {"files": MAX_FILES, "file_bytes": MAX_FILE_BYTES, "total_bytes": MAX_TOTAL_BYTES},
         "supported_extensions": sorted(SUPPORTED_EXTENSIONS),
         "max_cve_lookups": MAX_LOOKUPS,
+        "manifest_filenames": sorted(MANIFEST_FILENAMES),
+        "max_dependency_entries": MAX_SCAN_ENTRIES,
+        "max_osv_requests": MAX_OSV_REQUESTS,
+        "max_osv_seconds": MAX_OSV_SECONDS,
     }
 
 
@@ -40,14 +47,15 @@ async def configuration() -> dict[str, object]:
     "multipart/form-data": {"schema": {"type": "object", "required": ["files"], "properties": {
         "files": {"type": "array", "items": {"type": "string", "format": "binary"}},
         "online_lookup": {"type": "boolean", "default": False},
+        "dependency_lookup": {"type": "boolean", "default": False},
     }}}
 }}})
 async def upload_scan(request: Request) -> dict[str, object]:
-    async with parse_upload(request) as (files, online_lookup):
-        return await scan(files, online_lookup)
+    async with parse_upload(request) as (files, online_lookup, dependency_lookup):
+        return await scan(files, online_lookup, dependency_lookup)
 
 
-async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str, object]:
+async def scan(files: list[UploadFile], online_lookup: bool = False, dependency_lookup: bool = False) -> dict[str, object]:
     if not files:
         raise HTTPException(status_code=400, detail="Choose at least one source file.")
     if len(files) > MAX_FILES:
@@ -57,6 +65,8 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
     skipped_files: list[dict[str, str]] = []
     findings = []
     analysis_warnings = []
+    dependencies = []
+    manifest_issues = []
     total_bytes = 0
     cve_mentions: dict[str, list[dict]] = {}
 
@@ -75,7 +85,8 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
                 status_code=413,
                 detail=f"Uploads must total no more than {MAX_TOTAL_BYTES // (1024 * 1024)} MB.",
             )
-        if extension not in SUPPORTED_EXTENSIONS:
+        manifest = is_manifest(filename)
+        if extension not in SUPPORTED_EXTENSIONS and not manifest:
             skipped_files.append({"file": filename, "reason": "Unsupported file extension"})
             continue
         if b"\x00" in content:
@@ -87,7 +98,12 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
         except UnicodeDecodeError:
             skipped_files.append({"file": filename, "reason": "Not valid UTF-8 text"})
             continue
-        scanned_files.append({"file": filename, "lines": len(source.splitlines())})
+        scanned_files.append({"file": filename, "lines": len(source.splitlines()), "kind": "manifest" if manifest else "source"})
+        if manifest:
+            inventory, issues = await run_in_threadpool(parse_manifest, filename, source, MAX_SCAN_ENTRIES - len(dependencies))
+            dependencies.extend(inventory)
+            manifest_issues.extend(issues)
+            continue
         file_findings, warnings = await run_in_threadpool(analyze_source, filename, source)
         findings.extend(file_findings)
         analysis_warnings.extend({"file": filename, "message": warning} for warning in warnings)
@@ -103,7 +119,7 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
     if not scanned_files:
         raise HTTPException(
             status_code=400,
-            detail={"message": "No supported UTF-8 text source files were found.", "skipped_files": skipped_files},
+            detail={"message": "No supported UTF-8 text source files or dependency manifests were found.", "skipped_files": skipped_files},
         )
 
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -114,10 +130,22 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
             reference = await run_in_threadpool(intelligence.lookup, cve)
             reference["mentions"] = cve_mentions[cve]
             references.append(reference)
+    dependency_results = await run_in_threadpool(dependency_intelligence.lookup_many, dependencies, dependency_lookup) if dependencies else []
+    advisory_count = sum(not advisory.get("withdrawn") for result in dependency_results for advisory in result["advisories"])
     return {
         "files_scanned": scanned_files,
         "skipped_files": skipped_files,
         "analysis_warnings": analysis_warnings,
+        "dependencies": dependencies,
+        "manifest_issues": manifest_issues,
+        "dependency_results": dependency_results,
+        "dependency_lookup": dependency_lookup,
+        "dependency_summary": {
+            "entries": len(dependencies), "exact": sum(entry["status"] == "exact" for entry in dependencies),
+            "unresolved": sum(entry["status"] == "unresolved" for entry in dependencies), "advisories": advisory_count,
+            "complete_queries": sum(result.get("complete", False) for result in dependency_results),
+        },
+        "dependency_notice": "Only exact registry pins are queried when OSV lookup is enabled. Ranges, missing versions, references, and conflicts stay unresolved. OSV matches require installation, marker, and applicability review. Partial/unavailable checks are not clean results.",
         "findings": [finding.to_dict() for finding in findings],
         "summary": {
             "files_scanned": len(scanned_files),
@@ -134,7 +162,7 @@ async def scan(files: list[UploadFile], online_lookup: bool = False) -> dict[str
             f"Looked up at most {MAX_LOOKUPS} mentioned CVE IDs. Provider cooldowns may leave partial results; retry missing lookups later."
             if online_lookup else "Online lookups are disabled. Enable them to look up CVE IDs mentioned in source."
         ),
-        "notice": "Heuristic findings need human review. Only CVE IDs are sent when online lookup is enabled; uploaded source stays local.",
+        "notice": "Findings and recommendations need human review. Code and manifest contents stay local. Opt-in lookups send CVE IDs or package ecosystems, names, and versions; uploaded files are not modified.",
     }
 
 

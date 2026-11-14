@@ -16,7 +16,7 @@ export function selectUploadFiles(files, config) {
     const dot = file.name.lastIndexOf(".");
     const extension = dot < 0 ? "" : file.name.slice(dot).toLowerCase();
     let reason = "";
-    if (!config.supported_extensions.includes(extension)) reason = "Unsupported file extension";
+    if (!config.supported_extensions.includes(extension) && !(config.manifest_filenames || []).includes(file.name.toLowerCase())) reason = "Unsupported file extension";
     else if (file.size > config.limits.file_bytes) reason = "Exceeds the per-file size limit";
     if (reason) skipped.push({file: name, reason});
     else accepted.push(file);
@@ -53,6 +53,19 @@ export function buildReadableReport(data) {
       `${finding.file}:${finding.line} (${finding.rule_id})`, `${finding.cwe}: ${finding.cwe_name || "Software weakness"}`,
       `Why: ${finding.description}`, `Source: ${finding.evidence}`, `Recommendation: ${finding.recommendation}`,
       `Example fix: ${finding.fix_example}`);
+  }
+  if (data.dependencies?.length || data.manifest_issues?.length || data.files_scanned.some(file => file.kind === "manifest")) {
+    lines.push("", "DEPENDENCY INVENTORY", `OSV lookup: ${data.dependency_lookup ? "enabled" : "disabled"}`, data.dependency_notice || "");
+    for (const issue of data.manifest_issues || []) lines.push(`${issue.file}: ${issue.message}`);
+    for (const entry of data.dependencies || []) lines.push(`${entry.ecosystem} ${entry.name || "Unresolved entry"}${entry.version ? "@" + entry.version : ""}: ${entry.status}${entry.dev ? " · dev dependency" : ""}${entry.optional ? " · optional" : ""} — ${entry.file} · ${entry.location}${entry.marker ? " · marker: " + entry.marker : ""}${entry.reason ? " · " + entry.reason : ""}`);
+    for (const result of data.dependency_results || []) {
+      lines.push("", `${result.ecosystem} ${result.name}@${result.version} — OSV: ${result.status} — ${result.complete ? "query complete" : "check incomplete"}`);
+      for (const location of result.locations) lines.push(`${location.file} · ${location.location}${location.conditional ? " · conditional; installation conditions not evaluated" : ""}`);
+      if (result.retrieved_at) lines.push(`Retrieved: ${new Date(result.retrieved_at * 1000).toISOString()}`);
+      if (result.warning) lines.push(result.warning);
+      if (result.complete && ["live", "cached"].includes(result.status) && !result.advisories.length) lines.push("No advisories returned for this completed query; this is not proof of security.");
+      for (const advisory of result.advisories) lines.push(advisory.id, advisory.url, advisory.summary, `Applicability: ${advisory.applicability}`, `Severity: ${advisory.severity}`, `Withdrawn: ${advisory.withdrawn || "no"}`, `Reported fixed versions: ${advisory.fixed_versions.join(", ") || "not supplied"}`, advisory.notice, "Affected-version evidence:", JSON.stringify(advisory.affected, null, 2));
+    }
   }
   lines.push("", "DATABASE REFERENCES — APPLICABILITY UNVERIFIED", data.intelligence_notice || "");
   if (Object.keys(data.cve_mentions || {}).length) lines.push(`CVE mentions: ${Object.keys(data.cve_mentions).join(", ")}`);

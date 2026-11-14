@@ -4,6 +4,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
@@ -117,7 +118,7 @@ class IntelligenceTests(unittest.TestCase):
     def test_corrupt_cache_payload_is_replaced(self):
         self.service.provider("CVE.org", CVE)
         self.now += 7
-        with sqlite3.connect(self.service.db_path) as db:
+        with closing(sqlite3.connect(self.service.db_path)) as db, db:
             db.execute("UPDATE cache SET payload='invalid-json'")
         self.assertEqual(self.service.provider("CVE.org", CVE)["status"], "live")
 

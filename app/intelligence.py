@@ -68,7 +68,7 @@ class Intelligence:
                 self._initialized = True
         return sqlite3.connect(self.db_path, timeout=2)
 
-    def reserve(self, provider: str):
+    def reserve(self, provider: str, interval: float = 6.1):
         # Persistent atomic reservation also coordinates multiple local workers.
         # Fail fast instead of accumulating sleeping workers or request queues.
         now = self.clock()
@@ -77,7 +77,7 @@ class Intelligence:
             row = db.execute("SELECT next_request FROM gates WHERE provider=?", (provider,)).fetchone()
             if row and row[0] > now:
                 raise ProviderUnavailable(f"{provider}: throttled; retry in {int(row[0] - now) + 1}s.")
-            db.execute("INSERT OR REPLACE INTO gates VALUES (?,?)", (provider, now + 6.1))
+            db.execute("INSERT OR REPLACE INTO gates VALUES (?,?)", (provider, now + interval))
 
     def cooldown(self, provider: str, seconds: float):
         with closing(self.connect()) as db, db:
@@ -97,10 +97,10 @@ class Intelligence:
         return self.request_json(provider, Request(
             "https://services.nvd.nist.gov/rest/json/cves/2.0?" + urlencode({"cveId": cve}), headers=headers))
 
-    def request_json(self, provider: str, request: Request) -> dict:
-        self.reserve(provider)
+    def request_json(self, provider: str, request: Request, interval: float = 6.1, timeout: float = 12) -> dict:
+        self.reserve(provider, interval)
         try:
-            with self.opener(request, timeout=12) as response:
+            with self.opener(request, timeout=timeout) as response:
                 data = response.read(MAX_RESPONSE + 1)
                 if len(data) > MAX_RESPONSE:
                     raise ValueError("response too large")

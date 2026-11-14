@@ -42,6 +42,20 @@ async def request(body=b'', path='/api/scan', headers=(), peer='127.0.0.1', chun
 
 
 class WebBoundaryTests(unittest.IsolatedAsyncioTestCase):
+    async def test_dependency_opt_in_is_parsed_separately_and_defaults_off(self):
+        body = multipart([('requirements.txt', b'requests==2.0.0')], [('online_lookup', 'false'), ('dependency_lookup', 'false')])
+        with patch('app.main.intelligence.request_json') as network:
+            status, data, _, _ = await request(body)
+        self.assertEqual(status, 200)
+        self.assertFalse(data['dependency_lookup'])
+        network.assert_not_called()
+        self.assertEqual(data['dependencies'][0]['version'], '2.0.0')
+        body = multipart([('requirements.txt', b'requests==2.0.0')], [('dependency_lookup', 'true')])
+        with patch('app.main.dependency_intelligence.lookup_many', return_value=[]) as lookup:
+            status, _, _, _ = await request(body)
+        self.assertEqual(status, 200)
+        self.assertTrue(lookup.call_args.args[1])
+
     async def test_exact_per_file_limit_stays_in_memory_and_closes_buffer(self):
         buffers = []
         def buffer(*args, **kwargs):

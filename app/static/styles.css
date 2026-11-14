@@ -164,3 +164,7 @@ details { min-width: 0; }
   .file-list .file-reason { max-width: none; text-align: left; }
 }
 @media (prefers-reduced-motion: no-preference) { button, .button, nav a, .dropzone { transition: background-color .15s, border-color .15s; } }
+
+.dependency-option { margin-top: 22px; }
+#dependencyLimit { margin: 10px 0 0 31px; font-size: .75rem; }
+.dependency-location { white-space: pre-line; }

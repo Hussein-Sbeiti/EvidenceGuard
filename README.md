@@ -10,7 +10,8 @@ and [examples/TEST_RESULTS.md](examples/TEST_RESULTS.md) for observed endpoint r
 
 - Runs locally with a FastAPI backend and a browser UI.
 - Uses a slate sidebar with separate source scan, results, and CVE database views; navigation moves above the content on smaller screens.
-- Accepts source files and folders; scans supported text files in memory.
+- Accepts source files, folders, requirements.txt, and package-lock.json; scans supported text files in memory.
+- Parses exact dependency pins locally and optionally queries OSV, with separate inventory, unresolved-entry, advisory-evidence, and fixed-version reporting.
 - Shows upload limits and reasons for skipped files, supports severity filtering, and downloads the latest completed scan as JSON or a readable text report.
 - Uses local heuristic rules for examples such as dynamic code execution, unsafe Python deserialization, shell command construction, risky HTML insertion, hard-coded credentials, and dynamically constructed SQL queries.
 - Does not save uploaded source files or send them to an external service.
@@ -52,11 +53,11 @@ The sync command downloads only `files_exploits.csv` from the [official Exploit-
 
 Use the **Vulnerability database** form to look up a CVE, or enable the upload checkbox to enrich CVE mentions. The API also supports `GET /api/intelligence/CVE-2021-44228` and the optional multipart field `online_lookup=true` on `POST /api/scan` (default false).
 
-Responses preserve provider provenance, retrieval time, record state (including rejected records), CVSS metrics, CNA affected-version data, and NVD CPE configurations. Applicability always remains `unverified`: neither a CVE mention, a keyword match, nor an exploit reference proves the uploaded application is vulnerable. Dependency manifests/version discovery and automatic applicability evaluation are future work. No AI provider key is needed for this integration.
+Responses preserve provider provenance, retrieval time, record state (including rejected records), CVSS metrics, CNA affected-version data, and NVD CPE configurations. Applicability always remains `unverified`: neither a CVE mention, a keyword match, nor an exploit reference proves the uploaded application is vulnerable. CVE applicability remains separate from the dependency inventory and OSV-reported version queries described below. No AI provider key is needed for this integration.
 
 ### Rate limiting and failures
 
-- Each online provider allows at most one outgoing request per 6.1 seconds, even when an NVD key is configured. This deliberately conservative rate does not increase with a key.
+- Each CVE.org/NVD provider allows at most one outgoing request per 6.1 seconds, even when an NVD key is configured. This deliberately conservative rate does not increase with a key.
 - SQLite reservations coordinate processes using the same cache file and survive restarts. Separate machines/cache paths do not share a quota; run a single local instance and avoid other clients using the same public IP/key while scanning.
 - Requests during a provider's interval or cooldown return partial results immediately instead of queuing workers. For multiple uncached CVE mentions, later IDs may need a manual lookup after the interval. There is no background queue or automatic retry loop.
 - Successful lookups, including empty responses, are cached for 24 hours. On refresh failure, stale data is explicitly labeled; cache entries older than 30 days are removed during successful writes.
@@ -64,6 +65,25 @@ Responses preserve provider provenance, retrieval time, record state (including 
 - Each provider request has a 12-second socket timeout and a 4 MB response limit. Network calls run outside the async event loop. A missing provider or inaccessible cache does not prevent heuristic results from being returned. Remote services may still enforce stricter policies; rate limiting cannot guarantee against an IP ban.
 
 Reference documentation: [CVE Search API](https://github.com/CVEProject/CVE-Search-API), [NVD vulnerability API](https://nvd.nist.gov/developers/vulnerabilities), [NVD API guidance](https://nvd.nist.gov/developers/start-here), [SearchSploit manual](https://www.exploit-db.com/searchsploit).
+
+## Dependency scanning
+
+Upload `requirements.txt` and/or `package-lock.json` alongside source or by themselves.
+Their inventory is parsed locally even with networking off. Exact pins are distinguished
+from ranges, missing versions, links, conflicting pins, and unsupported references.
+
+Enable **Check pinned dependencies with OSV** for the separate opt-in advisory lookup.
+Only ecosystems, names, and versions are sent; no new API key is needed. The API field is
+`dependency_lookup=true` on `/api/scan` (default false). OSV queries reuse caching,
+persistent pacing, cooldowns, and partial/stale results. Each scan schedules at most
+10 requests within a 30-second budget, at one request per second; complete cached
+queries do not consume this budget.
+
+Results and exports show manifest locations, versions, OSV records, affected ranges,
+and reported fixed boundaries. An OSV-reported match is not proof of installation or
+exploitability, and fixed boundaries are not automatically selected upgrades.
+See [dependency details and fixture steps](docs/DEPENDENCY_SCANNING.md) for supported
+formats, privacy, limits, pagination, and uncertainty handling.
 
 ## Test
 
@@ -125,7 +145,7 @@ The browser reads limits and supported extensions from `GET /api/config`, and th
 ## Suggested next steps
 
 1. Obtain independent review of the expanded corpus and complete browser responsive/keyboard checks.
-2. Add dependency-file parsing and affected-version matching. Current CVE lookups provide reference evidence only; they do not discover vulnerable dependencies or infer a CVE from a CWE rule.
+2. Extend manifest/lockfile support and independently validate version applicability and upgrade compatibility. Current OSV results remain source-reported matches.
 3. Add an optional local model (for example, through Ollama) to explain verified rule matches. Keep deterministic findings separate from model-generated suggestions and label model output as unverified.
 4. Evaluate proposed fixes with tests and human review; do not automatically apply model-generated patches.
 

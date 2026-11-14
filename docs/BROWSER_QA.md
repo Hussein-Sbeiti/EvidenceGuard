@@ -32,7 +32,10 @@ HTML alone is insufficient.
 | Failed scan | Error is visible and announced; controls re-enable; no stale report is presented as a new result | Pending |
 | Incomplete `.py`/`.ts` upload | Partial-analysis warning is visible in the results | Pending |
 | Download JSON/text while filtering | Both downloads contain the full completed report, warnings, and provenance | Pending |
-| Online lookup off/on | No external lookup when off; only CVE IDs sent when on | Pending |
+| CVE lookup off/on | No CVE lookup when off; only CVE IDs sent when on | Pending |
+| Dependency manifests, networking off | Fixture inventory shows 3 exact and 2 unresolved entries; no OSV request | Pending |
+| Separate OSV opt-in | Package/version results show status, locations, conditions, affected evidence, and fixed boundaries | Pending |
+| Dependency exports | Full inventory, unresolved reasons, partial/stale warnings, and advisory evidence are retained | Pending |
 | Long filename and source snippet | Content wraps or scrolls within its own panel, not the page | Pending |
 
 The existing sidebar anchors, semantic headings, focus indicators, skip link,
