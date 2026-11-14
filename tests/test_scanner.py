@@ -1,9 +1,18 @@
 import unittest
 
-from app.scanner import display_filename, scan_source
+from app.scanner import CWE_NAMES, RULES, display_filename, scan_source
 
 
 class ScannerTests(unittest.TestCase):
+    def test_each_rule_has_a_named_weakness_and_explanation(self) -> None:
+        for rule in RULES:
+            with self.subTest(rule=rule.id):
+                self.assertIn(rule.cwe, CWE_NAMES)
+                self.assertTrue(rule.description)
+                self.assertTrue(rule.recommendation)
+        finding = scan_source("test.py", "eval(user_input)")[0].to_dict()
+        self.assertEqual(finding["cwe_name"], "Eval Injection")
+
     def test_detects_risky_python_call_with_line_number(self) -> None:
         findings = scan_source("src/example.py", "print('safe')\nresult = eval(user_input)\n")
 

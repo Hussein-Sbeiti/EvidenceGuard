@@ -1,6 +1,10 @@
 import re
+from bisect import bisect_left, bisect_right
 from dataclasses import asdict, dataclass
 from pathlib import PurePosixPath
+
+from app.javascript_parser import analyze_javascript
+from app.python_analysis import analyze_python, mask_python
 
 
 SUPPORTED_EXTENSIONS = {
@@ -17,6 +21,15 @@ SUPPORTED_EXTENSIONS = {
     ".rb",
     ".ts",
     ".tsx",
+}
+
+CWE_NAMES = {
+    "CWE-78": "OS Command Injection",
+    "CWE-79": "Cross-site Scripting",
+    "CWE-89": "SQL Injection",
+    "CWE-95": "Eval Injection",
+    "CWE-502": "Deserialization of Untrusted Data",
+    "CWE-798": "Use of Hard-coded Credentials",
 }
 
 
@@ -90,6 +103,17 @@ RULES = (
         pattern=re.compile(r"\bshell\s*=\s*True\b"),
     ),
     Rule(
+        id="PY-SQL-INJECTION",
+        title="SQL query constructed with dynamic values",
+        severity="high",
+        cwe="CWE-89",
+        description="A SQL execution call receives a query built with interpolation, formatting, or concatenation. Untrusted values could change the SQL structure; review the data source.",
+        recommendation="Bind data values with database parameters instead of inserting them into SQL text. Use an allowlist for SQL identifiers that cannot be parameterized.",
+        fix_example='cursor.execute("SELECT username FROM users WHERE username = ?", (username,))',
+        languages=frozenset({".py"}),
+        pattern=re.compile(r"(?!)"),  # Requires AST and local value-flow analysis.
+    ),
+    Rule(
         id="JS-EVAL",
         title="Dynamic code execution with eval",
         severity="high",
@@ -109,7 +133,7 @@ RULES = (
         recommendation="Use textContent for plain text, or sanitize HTML with a maintained allowlist sanitizer.",
         fix_example="element.textContent = userProvidedText;",
         languages=frozenset({".js", ".jsx", ".ts", ".tsx"}),
-        pattern=re.compile(r"\.innerHTML\s*="),
+        pattern=re.compile(r"\.\s*innerHTML\s*=(?!=|>)"),
     ),
     Rule(
         id="JS-DOCUMENT-WRITE",
@@ -153,7 +177,9 @@ class Finding:
     evidence: str
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        result = asdict(self)
+        result["cwe_name"] = CWE_NAMES.get(self.cwe, "Software weakness")
+        return result
 
 
 def display_filename(filename: str) -> str:
@@ -163,33 +189,86 @@ def display_filename(filename: str) -> str:
     return "/".join(parts) or "uploaded-file"
 
 
-def scan_source(filename: str, source: str) -> list[Finding]:
+def analyze_source(filename: str, source: str) -> tuple[list[Finding], list[str]]:
     extension = PurePosixPath(filename.replace("\\", "/")).suffix.lower()
     if extension not in SUPPORTED_EXTENSIONS:
-        return []
+        return [], []
+    lines = source.splitlines()
+    matches = []
+    warnings = []
+    if extension == ".py":
+        matches, warnings = analyze_python(source)
+        if matches is None:
+            code, literals = mask_python(source)
+            matches = lexical_matches(code, literals, extension)
+    elif extension in {".js", ".jsx", ".ts", ".tsx"}:
+        matches, warnings = analyze_javascript(source, extension)
+    else:
+        # The remaining languages still use the original credential heuristic.
+        for line_number, line in enumerate(lines, 1):
+            if RULES[-1].pattern.search(line):
+                matches.append(("HARDCODED-SECRET", line_number, line_number))
 
-    findings: list[Finding] = []
-    for line_number, line in enumerate(source.splitlines(), start=1):
-        for rule in RULES:
-            if extension not in rule.languages or not rule.pattern.search(line):
-                continue
-            if rule.id == "PY-YAML" and re.search(
-                r"\b(?:yaml\s*\.\s*safe_load|Loader\s*=\s*(?:yaml\s*\.\s*)?SafeLoader)\b",
-                line,
-            ):
-                continue
-            findings.append(
-                Finding(
-                    file=display_filename(filename),
-                    line=line_number,
-                    rule_id=rule.id,
-                    title=rule.title,
-                    severity=rule.severity,
-                    cwe=rule.cwe,
-                    description=rule.description,
-                    recommendation=rule.recommendation,
-                    fix_example=rule.fix_example,
-                    evidence=line.strip()[:300],
-                )
-            )
-    return findings
+    by_id = {rule.id: rule for rule in RULES}
+    findings = []
+    seen = set()
+    rule_order = {rule.id: index for index, rule in enumerate(RULES)}
+    for rule_id, start, end in sorted(matches, key=lambda match: (match[1], rule_order[match[0]])):
+        if (rule_id, start) in seen:
+            continue
+        seen.add((rule_id, start))
+        rule = by_id[rule_id]
+        findings.append(Finding(
+            file=display_filename(filename), line=start, rule_id=rule.id,
+            title=rule.title, severity=rule.severity, cwe=rule.cwe,
+            description=rule.description, recommendation=rule.recommendation,
+            fix_example=rule.fix_example, evidence="\n".join(lines[start - 1:end]).strip()[:300],
+        ))
+    return findings, warnings
+
+
+def lexical_matches(code: str, literals: list[tuple[int, int, str]], extension: str) -> list[tuple[str, int, int]]:
+    """Find patterns across lines while preserving original source locations."""
+    offsets = [index for index, char in enumerate(code) if char == "\n"]
+    matches = []
+    for rule in RULES:
+        if extension not in rule.languages or rule.id == "HARDCODED-SECRET":
+            continue
+        for match in rule.pattern.finditer(code):
+            # Function declarations and explicit member access aren't a direct
+            # call to JavaScript's global eval function.
+            if rule.id == "JS-EVAL":
+                cursor = match.start() - 1
+                while cursor >= 0 and code[cursor].isspace():
+                    cursor -= 1
+                if cursor >= 0 and code[cursor] in ".$":
+                    continue
+                end_word = cursor + 1
+                while cursor >= 0 and (code[cursor].isalnum() or code[cursor] in "_$"):
+                    cursor -= 1
+                if code[cursor + 1:end_word] == "function":
+                    continue
+            start = bisect_right(offsets, match.start()) + 1
+            end = bisect_right(offsets, match.end() - 1) + 1
+            matches.append((rule.id, start, end))
+    credential_prefix = re.compile(
+        r"(?i)\b(?:password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=](?!=|>)"
+    )
+    literals = sorted(literals)
+    literal_starts = [literal[0] for literal in literals]
+    for assignment in credential_prefix.finditer(code):
+        index = bisect_left(literal_starts, assignment.end())
+        if index == len(literals):
+            continue
+        start, end, value = literals[index]
+        if code[assignment.end():start].strip():
+            continue
+        if len(value) < 4 or any(char.isspace() for char in value):
+            continue
+        matches.append(("HARDCODED-SECRET", bisect_right(offsets, start) + 1, bisect_right(offsets, end - 1) + 1))
+    return matches
+
+
+def scan_source(filename: str, source: str) -> list[Finding]:
+    """Compatibility entry point for callers that only need findings."""
+    return analyze_source(filename, source)[0]

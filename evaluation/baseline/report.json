@@ -1,0 +1,800 @@
+{
+  "cases": 39,
+  "rule_count": 9,
+  "matching_cases": 30,
+  "counts": {
+    "tp": 17,
+    "fp": 5,
+    "fn": 4,
+    "tn": 325
+  },
+  "precision": 0.7727272727272727,
+  "recall": 0.8095238095238095,
+  "per_rule": {
+    "HARDCODED-SECRET": {
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "tn": 36
+    },
+    "JS-DOCUMENT-WRITE": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 35
+    },
+    "JS-EVAL": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "tn": 37
+    },
+    "JS-INNERHTML": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 36
+    },
+    "PY-EVAL": {
+      "tp": 2,
+      "fp": 2,
+      "fn": 1,
+      "tn": 34
+    },
+    "PY-EXEC": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 38
+    },
+    "PY-PICKLE": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 1,
+      "tn": 35
+    },
+    "PY-SHELL": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "tn": 37
+    },
+    "PY-YAML": {
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "tn": 37
+    }
+  },
+  "results": [
+    {
+      "id": "python_eval_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-EVAL"
+      ],
+      "actual_rule_ids": [
+        "PY-EVAL"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-EVAL",
+          "line": 2
+        }
+      ],
+      "review": "Evaluating an untrusted expression versus parsing JSON.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_eval_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Evaluating an untrusted expression versus parsing JSON.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_exec_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-EXEC"
+      ],
+      "actual_rule_ids": [
+        "PY-EXEC"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-EXEC",
+          "line": 2
+        }
+      ],
+      "review": "Executing untrusted code versus dispatching explicit operations.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_exec_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Executing untrusted code versus dispatching explicit operations.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_pickle_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "actual_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-PICKLE",
+          "line": 2
+        }
+      ],
+      "review": "Untrusted pickle deserialization versus a data-only parser.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_pickle_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Untrusted pickle deserialization versus a data-only parser.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_yaml_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-YAML"
+      ],
+      "actual_rule_ids": [
+        "PY-YAML"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-YAML",
+          "line": 2
+        }
+      ],
+      "review": "Potentially unsafe YAML loader versus explicitly selecting SafeLoader.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_yaml_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Potentially unsafe YAML loader versus explicitly selecting SafeLoader.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_shell_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-SHELL"
+      ],
+      "actual_rule_ids": [
+        "PY-SHELL"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-SHELL",
+          "line": 2
+        }
+      ],
+      "review": "Shell interpretation of input versus an argument list without a shell.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_shell_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Shell interpretation of input versus an argument list without a shell.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_eval_positive",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [
+        "JS-EVAL"
+      ],
+      "actual_rule_ids": [
+        "JS-EVAL"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-EVAL",
+          "line": 2
+        }
+      ],
+      "review": "Evaluating an untrusted expression versus parsing JSON.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_eval_negative",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Evaluating an untrusted expression versus parsing JSON.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_html_positive",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [
+        "JS-INNERHTML"
+      ],
+      "actual_rule_ids": [
+        "JS-INNERHTML"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-INNERHTML",
+          "line": 2
+        }
+      ],
+      "review": "Interpreting input as HTML versus displaying plain text.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_html_negative",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Interpreting input as HTML versus displaying plain text.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_write_positive",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "actual_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-DOCUMENT-WRITE",
+          "line": 2
+        }
+      ],
+      "review": "Writing input as HTML versus displaying plain text.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_write_negative",
+      "suite": "coverage",
+      "filename": "sample.js",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Writing input as HTML versus displaying plain text.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "hardcoded_credential_positive",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "HARDCODED-SECRET"
+      ],
+      "actual_rule_ids": [
+        "HARDCODED-SECRET"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "HARDCODED-SECRET",
+          "line": 2
+        }
+      ],
+      "review": "A fake literal credential versus retrieving a secret from the environment.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "hardcoded_credential_negative",
+      "suite": "coverage",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "A fake literal credential versus retrieving a secret from the environment.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "pickle_file",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "actual_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-PICKLE",
+          "line": 1
+        }
+      ],
+      "review": "The file-based pickle API also deserializes objects.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "yaml_safe_load",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "The safe_load API should not be flagged.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "yaml_unqualified_safe_loader",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "An explicitly selected SafeLoader is excluded by the existing rule.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "eval_spacing",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-EVAL"
+      ],
+      "actual_rule_ids": [
+        "PY-EVAL"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-EVAL",
+          "line": 1
+        }
+      ],
+      "review": "Whitespace before an opening parenthesis is accepted.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "pickle_spacing",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "actual_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "PY-PICKLE",
+          "line": 1
+        }
+      ],
+      "review": "Whitespace around a member access is legal Python.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_write_spacing",
+      "suite": "variant",
+      "filename": "sample.js",
+      "expected_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "actual_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-DOCUMENT-WRITE",
+          "line": 1
+        }
+      ],
+      "review": "Whitespace around member access and call punctuation.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_typescript",
+      "suite": "variant",
+      "filename": "sample.ts",
+      "expected_rule_ids": [
+        "JS-EVAL"
+      ],
+      "actual_rule_ids": [
+        "JS-EVAL"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-EVAL",
+          "line": 1
+        }
+      ],
+      "review": "The JavaScript eval rule also applies to TypeScript.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_jsx",
+      "suite": "variant",
+      "filename": "sample.jsx",
+      "expected_rule_ids": [
+        "JS-INNERHTML"
+      ],
+      "actual_rule_ids": [
+        "JS-INNERHTML"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-INNERHTML",
+          "line": 1
+        }
+      ],
+      "review": "The HTML insertion rule also applies to JSX files.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_tsx",
+      "suite": "variant",
+      "filename": "sample.tsx",
+      "expected_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "actual_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "JS-DOCUMENT-WRITE",
+          "line": 1
+        }
+      ],
+      "review": "The HTML writing rule also applies to TSX files.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "python_rule_wrong_language",
+      "suite": "variant",
+      "filename": "sample.java",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "Python/JavaScript eval rules must not be applied to Java.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_rule_wrong_language",
+      "suite": "variant",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [],
+      "review": "A JavaScript DOM pattern must not be applied to a Python file.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "global_credential_java",
+      "suite": "variant",
+      "filename": "sample.java",
+      "expected_rule_ids": [
+        "HARDCODED-SECRET"
+      ],
+      "actual_rule_ids": [
+        "HARDCODED-SECRET"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "matches_review": true,
+      "findings": [
+        {
+          "rule_id": "HARDCODED-SECRET",
+          "line": 1
+        }
+      ],
+      "review": "The credential heuristic is shared across supported languages.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "comment_false_positive",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [
+        "PY-EVAL"
+      ],
+      "false_positives": [
+        "PY-EVAL"
+      ],
+      "false_negatives": [],
+      "matches_review": false,
+      "findings": [
+        {
+          "rule_id": "PY-EVAL",
+          "line": 1
+        }
+      ],
+      "review": "A comment does not execute eval; the current regex flags it.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "string_false_positive",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [
+        "PY-EVAL"
+      ],
+      "false_positives": [
+        "PY-EVAL"
+      ],
+      "false_negatives": [],
+      "matches_review": false,
+      "findings": [
+        {
+          "rule_id": "PY-EVAL",
+          "line": 1
+        }
+      ],
+      "review": "A quoted demonstration string does not execute eval.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_comment_false_positive",
+      "suite": "diagnostic",
+      "filename": "sample.js",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "false_positives": [
+        "JS-DOCUMENT-WRITE"
+      ],
+      "false_negatives": [],
+      "matches_review": false,
+      "findings": [
+        {
+          "rule_id": "JS-DOCUMENT-WRITE",
+          "line": 1
+        }
+      ],
+      "review": "A JavaScript comment does not write HTML.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "yaml_multiline_safe_false_positive",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [
+        "PY-YAML"
+      ],
+      "false_positives": [
+        "PY-YAML"
+      ],
+      "false_negatives": [],
+      "matches_review": false,
+      "findings": [
+        {
+          "rule_id": "PY-YAML",
+          "line": 1
+        }
+      ],
+      "review": "The selected SafeLoader is on another line, which the current exclusion misses.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "pickle_alias_missed",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-PICKLE"
+      ],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [
+        "PY-PICKLE"
+      ],
+      "matches_review": false,
+      "findings": [],
+      "review": "The pickle import alias is not resolved by the current rule.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "eval_line_continuation_missed",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-EVAL"
+      ],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [
+        "PY-EVAL"
+      ],
+      "matches_review": false,
+      "findings": [],
+      "review": "An explicit Python line continuation separates the name from the call.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "shell_multiline_value_missed",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [
+        "PY-SHELL"
+      ],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [
+        "PY-SHELL"
+      ],
+      "matches_review": false,
+      "findings": [],
+      "review": "The shell keyword and True value are on separate lines.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "javascript_multiline_assignment_missed",
+      "suite": "diagnostic",
+      "filename": "sample.js",
+      "expected_rule_ids": [
+        "JS-INNERHTML"
+      ],
+      "actual_rule_ids": [],
+      "false_positives": [],
+      "false_negatives": [
+        "JS-INNERHTML"
+      ],
+      "matches_review": false,
+      "findings": [],
+      "review": "A valid assignment spans two lines; the current per-line regex misses it.",
+      "unsupported_weaknesses": []
+    },
+    {
+      "id": "sql_text_credential_false_positive",
+      "suite": "diagnostic",
+      "filename": "sample.py",
+      "expected_rule_ids": [],
+      "actual_rule_ids": [
+        "HARDCODED-SECRET"
+      ],
+      "false_positives": [
+        "HARDCODED-SECRET"
+      ],
+      "false_negatives": [],
+      "matches_review": false,
+      "findings": [
+        {
+          "rule_id": "HARDCODED-SECRET",
+          "line": 1
+        }
+      ],
+      "review": "The SQL interpolation is not a literal credential. SQL injection itself has no current detection rule.",
+      "unsupported_weaknesses": [
+        {
+          "cwe": "CWE-89",
+          "description": "SQL injection through interpolation; no SQL injection rule exists in this catalog."
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-14T16:19:15.604491+00:00",
+  "scanner_sha256": "b83dfe8f10677a8d994e006f93114701022ded8428f6141220d5c1b8c92a4634",
+  "dataset_sha256": "07bff602660912f41345a518f5d0db40e4737f65903499cad2d05820d8e7a87e"
+}

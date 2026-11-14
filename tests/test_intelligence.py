@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from fastapi import HTTPException, UploadFile
 
 from app.intelligence import Intelligence, ProviderUnavailable, normalize, retry_seconds, validate_cve
-from app.main import app, lookup_cve, scan
+from app.main import MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES, app, configuration, lookup_cve, scan
 
 
 CVE = "CVE-2021-44228"
@@ -135,13 +135,55 @@ class IntelligenceTests(unittest.TestCase):
 
 
 class IntegrationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_incomplete_python_returns_analysis_warning_and_partial_findings(self):
+        source = b'eval(user_input)\nif (\n'
+        result = await scan([UploadFile(filename="incomplete.py", file=io.BytesIO(source))], False)
+        self.assertEqual(result["findings"][0]["rule_id"], "PY-EVAL")
+        self.assertEqual(result["analysis_warnings"][0]["file"], "incomplete.py")
+        self.assertIn("fallback", result["analysis_warnings"][0]["message"])
+
+    async def test_upload_configuration_matches_server_limits(self):
+        config = await configuration()
+        self.assertEqual(config["limits"], {"files": MAX_FILES, "file_bytes": MAX_FILE_BYTES, "total_bytes": MAX_TOTAL_BYTES})
+        self.assertIn(".py", config["supported_extensions"])
+
+    async def test_skipped_files_reported_without_blocking_valid_source(self):
+        files = [UploadFile(filename="safe.py", file=io.BytesIO(b"print('hello')")),
+                 UploadFile(filename="notes.txt", file=io.BytesIO(b"notes")),
+                 UploadFile(filename="binary.py", file=io.BytesIO(b"\x00\x01"))]
+        result = await scan(files, False)
+        self.assertEqual(result["summary"]["files_scanned"], 1)
+        self.assertEqual(result["summary"]["findings"], 0)
+        self.assertEqual(result["skipped_files"], [
+            {"file": "notes.txt", "reason": "Unsupported file extension"},
+            {"file": "binary.py", "reason": "Binary content detected"}])
+        self.assertFalse(result["online_lookup"])
+
+    async def test_upload_limits_enforced_at_server(self):
+        cases = [
+            [UploadFile(filename="example.py", file=io.BytesIO(b"x")) for _ in range(MAX_FILES + 1)],
+            [UploadFile(filename="large.py", file=io.BytesIO(b"x" * (MAX_FILE_BYTES + 1)))],
+            [UploadFile(filename=f"file{i}.py", file=io.BytesIO(b"x" * MAX_FILE_BYTES)) for i in range(MAX_TOTAL_BYTES // MAX_FILE_BYTES + 1)],
+        ]
+        for files in cases:
+            with self.subTest(files=len(files)):
+                with self.assertRaises(HTTPException) as error:
+                    await scan(files, False)
+                self.assertEqual(error.exception.status_code, 413)
+
+    async def test_all_binary_files_rejected_clearly(self):
+        with self.assertRaises(HTTPException) as error:
+            await scan([UploadFile(filename="binary.py", file=io.BytesIO(b"\x00"))], False)
+        self.assertEqual(error.exception.status_code, 400)
+        self.assertIn("No supported UTF-8 text source", error.exception.detail["message"])
+
     async def test_multipart_route_parses_opt_in_and_returns_results(self):
         body = (f'--boundary\r\nContent-Disposition: form-data; name="online_lookup"\r\n\r\ntrue\r\n'
                 f'--boundary\r\nContent-Disposition: form-data; name="files"; filename="example.py"\r\n'
                 f'Content-Type: text/plain\r\n\r\n# {CVE}\neval(user)\r\n--boundary--\r\n').encode()
         scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "POST",
                  "scheme": "http", "path": "/api/scan", "query_string": b"",
-                 "headers": [(b"content-type", b"multipart/form-data; boundary=boundary")],
+                 "headers": [(b"host", b"127.0.0.1"), (b"content-type", b"multipart/form-data; boundary=boundary")],
                  "server": ("testserver", 80), "client": ("127.0.0.1", 1234), "root_path": ""}
         messages = []
         async def receive():

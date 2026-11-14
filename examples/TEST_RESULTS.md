@@ -30,3 +30,63 @@ the observed results confirm reference retrieval, not affected-version matching
 or exploitability. Provider availability and local index contents may change.
 
 See [README.md](README.md) for the browser steps and expected per-file counts.
+
+## Interface update verification
+
+After the sidebar redesign, the running website and its JavaScript, CSS, and
+module assets all returned HTTP 200 with the correct content types. The new
+configuration endpoint returned the server's upload limits. A multipart upload
+of the four fixtures plus an unsupported text file and a binary file produced
+4 scanned files, 9 findings, and 2 explicit skip reasons. Findings included named
+CWE categories. A CVE lookup still returned cached CVE.org and NVD records and
+local Exploit-DB references.
+
+All 25 backend tests and 5 frontend utility tests passed. The frontend checks
+cover selection limits and readable report content, including stale provider
+warnings and affected-version evidence. Browser-based visual, navigation, and
+download checks remain pending because browser control was unavailable.
+
+## Syntax-analysis regression verification
+
+The 39 original evaluation labels are unchanged. The former five false positives
+and four missed rule matches are fixed for those cases; current results are
+39/39 matching labels. The original results are preserved in
+`evaluation/baseline/`, and the current report hashes the Python and JavaScript
+analyzer modules as well as the scanner entry point.
+
+All 53 backend tests and 6 frontend utility tests pass. A live multipart upload
+of comment/string, import-alias, multiline JavaScript, incomplete Python, and
+the original login fixtures returned four expected findings across four files,
+plus one explicit partial-analysis warning for the incomplete file. The login
+file no longer produces the spurious credential finding; its SQL injection is
+still outside the implemented rules. Online lookup was disabled for this test.
+
+Python AST analysis is flow-insensitive, and JavaScript uses a lightweight lexer
+rather than a full parser. Passing this small synthetic corpus does not establish
+real-world accuracy. Browser rendering of the new warning remains unverified.
+
+## SQL, full language parser, and upload review
+
+The current scanner has ten rules and 65 agent-reviewed synthetic cases.
+All 65 match their labels. All labels are awaiting independent sign-off in
+`evaluation/INDEPENDENT_REVIEW.md`; this is not an independently validated score.
+The SQL diagnostic's label was expanded for the new rule, and the previous
+39-case report is preserved in `evaluation/pre-sql/`.
+
+All 73 backend tests and 7 frontend utility tests pass. They include SQL local
+value flow, parameterized-query negatives, Python binding cases, complete
+JS/JSX/TS/TSX grammar parsing, regex ambiguity, malformed syntax recovery,
+streaming size limits, no disk rollover at the accepted file limit, buffer
+cleanup, invalid encodings, malformed multipart, and loopback/origin checks.
+
+A live six-file upload to localhost:8001 returned 11 expected findings: the five
+existing source examples plus a TSX fixture. The login file now has one SQL
+finding at line 18. JSX text was ignored while its executable expression was
+detected. Online lookup was disabled and no analysis warnings were returned.
+The running service returned `Cache-Control: no-store`, HTTP 404 for `/.env`,
+HTTP 400 for an untrusted Host, and HTTP 403 for an external Origin.
+
+See `docs/UPLOAD_REVIEW.md` for the enforced boundaries and practical limits.
+Actual responsive, keyboard, and browser download checks remain pending in
+`docs/BROWSER_QA.md`: browser control reported that its access host was
+unavailable. No browser interaction is represented as a passing check.

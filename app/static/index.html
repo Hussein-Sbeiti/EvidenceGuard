@@ -4,278 +4,76 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <title>Local Vulnerability Scanner</title>
-    <style>
-      :root {
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        color: #252525;
-        background: #f5f5f3;
-        font-synthesis: none;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; }
-      main { width: min(900px, calc(100% - 32px)); margin: 48px auto; }
-      .eyebrow { color: #686868; font-size: .78rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
-      h1 { margin: 10px 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.04em; }
-      .intro, .notice { color: #626262; line-height: 1.65; }
-      .panel { margin-top: 26px; padding: 24px; border: 1px solid #dededb; border-radius: 12px; background: #fff; }
-      .dropzone { display: grid; min-height: 190px; place-content: center; gap: 12px; text-align: center; border: 1px dashed #bdbdb8; border-radius: 9px; background: #fafaf9; transition: border-color .2s, background .2s; }
-      .dropzone.dragging { border-color: #555; background: #f0f0ee; }
-      .dropzone strong { font-size: 1.08rem; }
-      .muted { color: #737373; font-size: .92rem; }
-      .buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-      button { border: 1px solid #c9c9c5; border-radius: 7px; padding: 10px 15px; font: inherit; font-weight: 600; cursor: pointer; }
-      button.primary { color: #fff; border-color: #333; background: #333; }
-      button.secondary { color: #333; background: #fff; }
-      button:hover:not(:disabled) { filter: brightness(.94); }
-      button:focus-visible { outline: 3px solid #999; outline-offset: 2px; }
-      button:disabled { opacity: .5; cursor: not-allowed; }
-      input[type=file] { display: none; }
-      #selected, #status { margin-top: 14px; color: #626262; overflow-wrap: anywhere; }
-      #status.error { color: #555; }
-      .results { margin-top: 26px; }
-      .summary { margin-bottom: 10px; color: #454545; font-weight: 600; }
-      .cwe-note { margin: 0 0 16px; color: #737373; font-size: .9rem; }
-      .finding { margin: 14px 0; padding: 20px; border: 1px solid #dededb; border-radius: 10px; background: #fff; }
-      .finding h3 { margin: 0 0 10px; font-size: 1.12rem; }
-      .finding-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-      .severity { flex: 0 0 auto; padding: 4px 8px; border: 1px solid #d5d5d1; border-radius: 5px; color: #4a4a4a; background: #f5f5f3; font-size: .75rem; font-weight: 700; }
-      .location { margin: 0 0 16px; color: #626262; font-size: .9rem; overflow-wrap: anywhere; }
-      .finding-section { margin-top: 16px; }
-      .finding-section h4 { margin: 0 0 7px; font-size: .88rem; }
-      .finding-section p { margin: 0; color: #555; line-height: 1.55; }
-      .category { color: #666; }
-      pre { margin: 8px 0 0; padding: 12px; border: 1px solid #e3e3df; border-radius: 6px; overflow-x: auto; color: #292929; background: #f7f7f5; font: .88rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
-      .empty { padding: 18px; border: 1px solid #dededb; border-radius: 9px; color: #555; background: #fff; }
-      .notice { margin-top: 22px; font-size: .88rem; }
-      @media (max-width: 600px) { main { margin-top: 30px; } .panel { padding: 16px; } .finding { padding: 16px; } }
-    </style>
+    <title>Scan source · Vulnerability Scanner</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script type="module" src="/static/app.js"></script>
   </head>
   <body>
-    <main>
-      <div class="eyebrow">Local code review</div>
-      <h1>Vulnerability Scanner</h1>
-      <p class="intro">Choose source files or a folder to check for common security issues. Each result shows the exact line and a suggested way to address it.</p>
-
-      <section class="panel" aria-label="Upload source code">
-        <div class="dropzone" id="dropzone" role="region" aria-label="Drop source files here">
-          <strong>Drop source files or a folder</strong>
-          <span class="muted">Python, JavaScript/TypeScript, Java, C/C++, Go, C#, PHP, and Ruby</span>
-          <div class="buttons">
-            <button class="secondary" id="chooseFiles" type="button">Choose files</button>
-            <button class="secondary" id="chooseFolder" type="button">Choose folder</button>
-          </div>
-          <input id="fileInput" type="file" multiple>
-          <input id="folderInput" type="file" multiple webkitdirectory directory>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <aside class="sidebar" aria-label="Scanner workspace">
+      <a class="brand" href="#scan"><span class="brand-mark" aria-hidden="true">V</span><span>Vulnerability<span class="brand-subtitle">SCANNER WORKSPACE</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav aria-label="Main navigation">
+        <a href="#scan" data-view="scan" aria-current="page"><span aria-hidden="true">01</span> Scan source</a>
+        <a href="#results" data-view="results"><span aria-hidden="true">02</span> Scan results <span id="navCount" class="nav-count" hidden>0</span></a>
+        <a href="#database" data-view="database"><span aria-hidden="true">03</span> CVE database</a>
+      </nav>
+      <div class="sidebar-footer"><span class="local-dot" aria-hidden="true"></span> Local workspace<p>Source analysis stays on your machine.</p></div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <div class="topbar"><span>SECURITY REVIEW</span><span class="local-label">Local analysis</span></div>
+      <section id="scanView" class="view" aria-labelledby="scanTitle">
+        <header class="page-header"><p class="eyebrow">START A REVIEW</p><h1 id="scanTitle" tabindex="-1">Scan your source.</h1><p class="intro">Find risky code patterns, understand the issue, and review a suggested fix.</p></header>
+        <div class="scan-layout">
+          <section class="panel upload-panel" aria-labelledby="uploadTitle">
+            <div class="panel-heading"><h2 id="uploadTitle">Source files</h2><span class="step-label">STEP 1</span></div>
+            <div class="dropzone" id="dropzone" role="region" aria-label="Drop source files here">
+              <span class="upload-symbol" aria-hidden="true">↑</span>
+              <strong>Drop source files here</strong>
+              <span class="muted">Or choose files or a folder from your computer.</span>
+              <div class="buttons"><button class="secondary" id="chooseFiles" type="button" disabled>Choose files</button><button class="secondary" id="chooseFolder" type="button" disabled>Choose folder</button></div>
+              <input id="fileInput" type="file" multiple aria-label="Select source files" tabindex="-1">
+              <input id="folderInput" type="file" multiple webkitdirectory directory aria-label="Select source folder" tabindex="-1">
+            </div>
+            <p id="uploadLimits" class="muted">Loading upload limits…</p>
+            <p id="selected" class="selection-summary" aria-live="polite">No files selected.</p>
+            <details id="selectionDetails" hidden><summary>Review selected and skipped files</summary><ul id="selectionList" class="file-list"></ul></details>
+            <div class="scan-options"><div class="panel-heading"><h2>Database references</h2><span class="step-label">OPTIONAL</span></div>
+              <label class="checkbox-row"><input id="onlineLookup" type="checkbox"><span><strong>Look up CVE IDs mentioned in source</strong><span class="muted">Send only CVE IDs to CVE.org and NVD. Source code stays local.</span></span></label>
+              <p id="lookupLimit" class="muted">References require software and affected-version review.</p>
+            </div>
+            <div class="scan-actions"><button class="primary" id="scanButton" type="button" disabled>Scan selected files <span aria-hidden="true">→</span></button><span class="muted">Files are read in memory.</span></div>
+            <p id="status" role="status" aria-live="polite"></p>
+          </section>
+          <aside class="guide" aria-label="Scan guidance"><p class="eyebrow">WHAT TO EXPECT</p><h2>A clear starting point for review.</h2>
+            <ol><li><strong>Choose your code</strong><p>Upload source files or select a project folder.</p></li><li><strong>Review the findings</strong><p>See the file, line, weakness, and a suggested mitigation.</p></li><li><strong>Keep a report</strong><p>Download the results for follow-up or your project notes.</p></li></ol>
+            <div class="supported"><h3>Supported languages</h3><p>Python · JavaScript · TypeScript · Java · C/C++ · C# · Go · PHP · Ruby</p></div>
+            <p class="notice">This scanner checks a limited set of patterns. Findings need human review, and a clean scan does not prove the code is secure.</p>
+          </aside>
         </div>
-        <div id="selected" aria-live="polite">No files selected.</div>
-        <p><label><input id="onlineLookup" type="checkbox"> Look up CVE IDs mentioned in source (optional)</label></p>
-        <p class="muted">Sends only CVE IDs to CVE.org and NVD. Up to 3 IDs per scan; rate limits may defer results. Software and affected versions still need review.</p>
-        <div class="buttons" style="margin-top: 16px">
-          <button class="primary" id="scanButton" type="button" disabled>Scan selected files</button>
-        </div>
-        <div id="status" role="status" aria-live="polite"></div>
       </section>
-
-      <section class="results" id="results" aria-live="polite"></section>
-      <section class="panel" aria-label="Vulnerability database lookup">
-        <h2>Vulnerability database</h2>
-        <form id="lookupForm">
-          <label for="cveInput">CVE ID</label>
-          <input id="cveInput" type="text" placeholder="CVE-2021-44228" required maxlength="28">
-          <button class="secondary" id="lookupButton" type="submit">Look up CVE</button>
-        </form>
-        <p class="muted">Queries CVE.org, NVD, and the configured local Exploit-DB metadata index. Results are references requiring applicability review.</p>
-        <div id="lookupStatus" role="status"></div>
+      <section id="resultsView" class="view" aria-labelledby="resultsTitle" hidden>
+        <header class="page-header"><p class="eyebrow">YOUR REVIEW</p><h1 id="resultsTitle" tabindex="-1">Scan results.</h1><p class="intro">Review code findings and database references, then save your report.</p></header>
+        <div id="resultsEmpty" class="panel empty-state"><span class="empty-symbol" aria-hidden="true">⌕</span><h2>Your findings will appear here.</h2><p>Choose source files and run a scan to start your review.</p><a class="button primary" href="#scan">Start a scan</a></div>
+        <div id="reportContent" hidden>
+          <div id="summaryStats" class="stats" aria-label="Scan summary"></div>
+          <div class="report-toolbar"><p id="reportTime" class="muted"></p><div class="buttons"><button id="exportJson" class="secondary" type="button" disabled>Download JSON</button><button id="exportText" class="secondary" type="button" disabled>Download report</button></div></div>
+          <p class="muted export-note">Reports include flagged source snippets. Review them before sharing.</p>
+          <details id="scanFiles" class="panel compact-panel"><summary id="scanFilesSummary">Files in this scan</summary><ul id="scanFilesList" class="file-list"></ul></details>
+          <div id="analysisWarnings" class="analysis-warnings" role="status" hidden></div>
+          <section aria-labelledby="findingsTitle"><div class="section-heading"><h2 id="findingsTitle">Code findings</h2><label class="filter-label" for="severityFilter">Severity <select id="severityFilter"><option value="all">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label></div><p class="muted">CWE (Common Weakness Enumeration) names describe the kind of software weakness.</p><div id="results" aria-live="polite"></div></section>
+          <section class="reference-section" aria-labelledby="referencesTitle"><div class="section-heading"><h2 id="referencesTitle">Database references</h2><span class="badge">Applicability unverified</span></div><p id="intelligenceNotice" class="muted"></p><div id="scanReferences"></div></section>
+          <p id="scanNotice" class="notice"></p>
+        </div>
+      </section>
+      <section id="databaseView" class="view" aria-labelledby="databaseTitle" hidden>
+        <header class="page-header"><p class="eyebrow">VULNERABILITY INTELLIGENCE</p><h1 id="databaseTitle" tabindex="-1">Look up a CVE.</h1><p class="intro">Bring official records and known exploit references into your review.</p></header>
+        <section class="panel" aria-label="Vulnerability database lookup"><h2>Search by CVE ID</h2><form id="lookupForm"><label for="cveInput">CVE ID</label><div class="lookup-fields"><input id="cveInput" type="text" placeholder="CVE-2021-44228" required maxlength="28" pattern="[Cc][Vv][Ee]-[0-9]{4}-[0-9]{4,19}" aria-describedby="cveHelp" spellcheck="false" autocapitalize="characters"><button class="primary" id="lookupButton" type="submit">Look up CVE <span aria-hidden="true">→</span></button></div></form><p id="cveHelp" class="muted">Use a complete ID, for example CVE-2021-44228.</p><p id="lookupStatus" role="status" aria-live="polite"></p></section>
+        <div class="provider-grid" aria-label="Database sources"><div class="provider-card"><span class="provider-number">01</span><h3>CVE.org</h3><p>Official CVE records and affected-product information.</p></div><div class="provider-card"><span class="provider-number">02</span><h3>NVD</h3><p>Severity scores, references, and CPE configuration evidence.</p></div><div class="provider-card"><span class="provider-number">03</span><h3>Exploit-DB</h3><p>Exact CVE references from the configured local metadata index.</p></div></div>
         <div id="lookupResults" aria-live="polite"></div>
+        <p class="notice">Requests use caching and rate limits. Some providers may be temporarily unavailable. A matching record or exploit reference does not establish that your application is affected.</p>
       </section>
-      <p class="notice">Scans run locally. This tool checks a limited set of patterns; it can miss issues or flag safe code. Review findings before making changes.</p>
+      <noscript><p class="panel">Enable JavaScript to select files, scan code, and look up CVEs.</p></noscript>
     </main>
-    <script>
-      const fileInput = document.querySelector("#fileInput");
-      const folderInput = document.querySelector("#folderInput");
-      const dropzone = document.querySelector("#dropzone");
-      const selected = document.querySelector("#selected");
-      const scanButton = document.querySelector("#scanButton");
-      const status = document.querySelector("#status");
-      const results = document.querySelector("#results");
-      let chosenFiles = [];
-
-      document.querySelector("#chooseFiles").addEventListener("click", () => fileInput.click());
-      document.querySelector("#chooseFolder").addEventListener("click", () => folderInput.click());
-
-      function selectFiles(files) {
-        chosenFiles = [...files].filter((file) => file.size <= 512 * 1024);
-        const rejected = files.length - chosenFiles.length;
-        selected.textContent = chosenFiles.length
-          ? `${chosenFiles.length} file(s) selected${rejected ? `; ${rejected} file(s) over 512 KB skipped` : ""}.`
-          : "No supported-size files selected.";
-        scanButton.disabled = chosenFiles.length === 0;
-        status.textContent = "";
-        status.className = "";
-        results.replaceChildren();
-      }
-
-      fileInput.addEventListener("change", () => selectFiles(fileInput.files));
-      folderInput.addEventListener("change", () => selectFiles(folderInput.files));
-      for (const eventName of ["dragenter", "dragover"]) {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.add("dragging");
-        });
-      }
-      for (const eventName of ["dragleave", "drop"]) {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.remove("dragging");
-        });
-      }
-      dropzone.addEventListener("drop", (event) => selectFiles(event.dataTransfer.files));
-
-      function addText(parent, tag, text, className) {
-        const element = document.createElement(tag);
-        element.textContent = text;
-        if (className) element.className = className;
-        parent.append(element);
-        return element;
-      }
-
-      function renderFindings(data) {
-        results.replaceChildren();
-        const summary = data.summary;
-        addText(results, "p", `${summary.files_scanned} file(s) scanned · ${summary.findings} finding(s) · ${summary.high} high · ${summary.medium} medium`, "summary");
-        addText(results, "p", data.intelligence_notice, "muted");
-        for (const reference of data.intelligence || []) renderIntelligence(results, reference);
-        if (!data.intelligence?.length && Object.keys(data.cve_mentions || {}).length) {
-          addText(results, "p", `CVE mentions (unverified): ${Object.keys(data.cve_mentions).join(", ")}`, "muted");
-        }
-        if (!data.findings.length) {
-          addText(results, "p", "No matches in the current rule catalog. This does not prove the code is secure.", "empty");
-          return;
-        }
-        addText(results, "p", "CWE means Common Weakness Enumeration, a standard way to categorize software weaknesses.", "cwe-note");
-        const cweNames = {
-          "CWE-78": "OS Command Injection",
-          "CWE-79": "Cross-site Scripting",
-          "CWE-95": "Eval Injection",
-          "CWE-502": "Deserialization of Untrusted Data",
-          "CWE-798": "Use of Hard-coded Credentials",
-        };
-        for (const finding of data.findings) {
-          const card = document.createElement("article");
-          card.className = `finding ${finding.severity}`;
-          const header = document.createElement("div");
-          header.className = "finding-header";
-          addText(header, "h3", finding.title);
-          addText(header, "span", finding.severity.toUpperCase(), "severity");
-          card.append(header);
-          addText(card, "p", `${finding.file} · Line ${finding.line} · ${finding.rule_id}`, "location");
-          addText(card, "p", `${finding.cwe} — ${cweNames[finding.cwe] || "Weakness category"}`, "category");
-          const sourceSection = document.createElement("section");
-          sourceSection.className = "finding-section";
-          addText(sourceSection, "h4", `Source (line ${finding.line})`);
-          addText(sourceSection, "pre", finding.evidence);
-          card.append(sourceSection);
-          const explanation = document.createElement("section");
-          explanation.className = "finding-section";
-          addText(explanation, "h4", "Why this was flagged");
-          addText(explanation, "p", finding.description);
-          card.append(explanation);
-          const mitigation = document.createElement("section");
-          mitigation.className = "finding-section";
-          addText(mitigation, "h4", "Suggested mitigation");
-          addText(mitigation, "p", finding.recommendation);
-          addText(mitigation, "pre", finding.fix_example);
-          card.append(mitigation);
-          results.append(card);
-        }
-      }
-
-      function renderIntelligence(parent, reference) {
-        const card = document.createElement("article");
-        card.className = "finding";
-        addText(card, "h3", `${reference.cve_id} · Applicability unverified`);
-        addText(card, "p", reference.notice, "muted");
-        if (reference.mentions) addText(card, "p", reference.mentions.map(m => `${m.file}:${m.line}`).join(", "), "location");
-        for (const source of reference.sources) {
-          addText(card, "h4", `${source.provider} · ${source.status}`);
-          if (source.retrieved_at) addText(card, "p", `Retrieved: ${new Date(source.retrieved_at * 1000).toLocaleString()}`, "muted");
-          if (source.index_modified_at) addText(card, "p", `Local index modified: ${new Date(source.index_modified_at * 1000).toLocaleString()}`, "muted");
-          if (source.warning) addText(card, "p", source.warning, "muted");
-          if (source.provider === "Exploit-DB") {
-            for (const exploit of source.data || []) {
-              const a = addText(card, "a", `${exploit.id}: ${exploit.title}`);
-              a.href = `https://www.exploit-db.com/exploits/${encodeURIComponent(exploit.id)}`;
-              a.target = "_blank";
-              a.rel = "noopener noreferrer";
-              card.append(document.createElement("br"));
-            }
-            if (source.status === "local" && !source.data.length) addText(card, "p", "No exact CVE references in the local index.");
-          } else if (source.data) {
-            addText(card, "p", `Record state: ${source.data.state || "unknown"}`);
-            addText(card, "p", source.data.description);
-            const a = addText(card, "a", `Open ${source.provider} record`);
-            a.href = source.provider === "NVD"
-              ? `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(reference.cve_id)}`
-              : `https://www.cve.org/CVERecord?id=${encodeURIComponent(reference.cve_id)}`;
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
-            const details = document.createElement("details");
-            addText(details, "summary", "Severity and affected version evidence");
-            addText(details, "pre", JSON.stringify({metrics: source.data.metrics, affected: source.data.affected, configurations: source.data.configurations}, null, 2));
-            card.append(details);
-          } else if (["live", "cached", "stale"].includes(source.status)) {
-            addText(card, "p", "No matching record returned by this provider.");
-          }
-        }
-        parent.append(card);
-      }
-
-      document.querySelector("#lookupForm").addEventListener("submit", async event => {
-        event.preventDefault();
-        const button = document.querySelector("#lookupButton");
-        const output = document.querySelector("#lookupResults");
-        const message = document.querySelector("#lookupStatus");
-        button.disabled = true;
-        output.replaceChildren();
-        message.textContent = "Looking up vulnerability records…";
-        try {
-          const cve = document.querySelector("#cveInput").value.trim();
-          const response = await fetch(`/api/intelligence/${encodeURIComponent(cve)}`);
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.detail || "Lookup failed.");
-          renderIntelligence(output, data);
-          message.textContent = "Lookup completed. Review provider status for partial results.";
-        } catch (error) {
-          message.textContent = error.message || "Lookup unavailable.";
-        } finally {
-          button.disabled = false;
-        }
-      });
-
-      scanButton.addEventListener("click", async () => {
-        const body = new FormData();
-        body.append("online_lookup", document.querySelector("#onlineLookup").checked);
-        for (const file of chosenFiles) {
-          const relativePath = file.webkitRelativePath || file.name;
-          body.append("files", file, relativePath);
-        }
-        scanButton.disabled = true;
-        status.textContent = "Scanning locally…";
-        status.className = "";
-        try {
-          const response = await fetch("/api/scan", { method: "POST", body });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.detail || "Scan failed.");
-          renderFindings(data);
-          status.textContent = data.notice;
-        } catch (error) {
-          status.textContent = error.message || "Unable to complete scan.";
-          status.className = "error";
-        } finally {
-          scanButton.disabled = chosenFiles.length === 0;
-        }
-      });
-    </script>
   </body>
 </html>
