@@ -47,6 +47,7 @@ llama-server -hf Mungert/VulnLLM-R-7B-GGUF:Q4_K_M --host 127.0.0.1 --port 8080 -
 
 #bash
 mkdir VULN_AI_SCANNER
+#copy app.py into VULN_AI_SCANNER
 cd VULN_AI_SCANNER
 python3 -m venv .venv
 source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
