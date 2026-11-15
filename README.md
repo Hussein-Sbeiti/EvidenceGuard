@@ -37,6 +37,7 @@ winget install llama.cpp
 
 #Start the model:
 #Works on Both Windows and Mac:
+#Execute this on one terminal
 
 llama-server -hf Mungert/VulnLLM-R-7B-GGUF:Q4_K_M --host 127.0.0.1 --port 8080 -c 8192
 
@@ -44,7 +45,7 @@ llama-server -hf Mungert/VulnLLM-R-7B-GGUF:Q4_K_M --host 127.0.0.1 --port 8080 -
 
 #Create the python backend and web interface
 
-
+#Execute this on another terminal
 #bash
 mkdir VULN_AI_SCANNER
 #copy app.py into VULN_AI_SCANNER
