@@ -20,7 +20,7 @@ and [examples/TEST_RESULTS.md](examples/TEST_RESULTS.md) for observed endpoint r
 
 This includes CVE/exploit reference lookups, but is **not yet an AI model or a complete vulnerability scanner**. The rule catalog detects patterns associated with vulnerability classes; it cannot tell whether an application is exploitable, and it can miss issues or report false positives. Suggested fixes are examples, not automatic patches. Do not treat a clean scan as proof of security.
 
-
+```
 #We will use:
 #Model: VulnLLM-R-7B
 #Runtime: llama.cpp
@@ -52,7 +52,7 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
 python3 -m pip3 install -r requirements.txt OR pip3 install fastapi uvicorn requests
 python -m uvicorn app:app --host 127.0.0.1 --port 8000 --reload
-```
+
 
 #Open <http://127.0.0.1:8000>. Stop the development server with `Ctrl+C`.
 
