@@ -61,13 +61,6 @@ def home():
         <h1>VulnLLM Security Analyzer</h1>
         <p>Submit source code for vulnerability analysis.</p>
 
-        <label>Programming language</label><br>
-        <select id="language">
-            <option>C</option>
-            <option>C++</option>
-            <option>Python</option>
-            <option>Java</option>
-        </select>
 
         <h3>Source code</h3>
         <textarea id="code"
@@ -82,7 +75,7 @@ def home():
         <script>
         async function analyze() {
             const code = document.getElementById("code").value;
-            const language = document.getElementById("language").value;
+            const language = "find vulnerabilities"
             const output = document.getElementById("output");
 
             if (!code.trim()) {
