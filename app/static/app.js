@@ -1,4 +1,4 @@
-import {selectUploadFiles, formatBytes, buildReadableReport, apiErrorMessage} from "./ui-utils.mjs";
+import {selectUploadFiles, formatBytes, buildReadableReport, apiErrorMessage} from "./ui-utils.mjs?v=ollama-2";
 import {renderDependencies} from "./dependency-ui.js";
 
 const $ = selector => document.querySelector(selector);
@@ -47,6 +47,7 @@ function updateScanControls() {
   $("#chooseFolder").disabled = scanning || !config;
   $("#onlineLookup").disabled = scanning;
   $("#dependencyLookup").disabled = scanning;
+  $("#aiExplain").disabled = scanning || !config?.ai;
   scanButton.textContent = scanning ? "Scanning…" : "Scan selected files →";
 }
 
@@ -105,6 +106,7 @@ async function loadConfig() {
     $("#uploadLimits").textContent = `Up to ${config.limits.files} supported files · ${formatBytes(config.limits.file_bytes)} per file · ${formatBytes(config.limits.total_bytes)} total`;
     $("#lookupLimit").textContent = `Up to ${config.max_cve_lookups} CVE IDs per scan. Rate limits may defer results; affected versions still need review.`;
     $("#dependencyLimit").textContent = `Manifests are parsed locally. Online OSV checks use at most ${config.max_osv_requests} requests in ${config.max_osv_seconds}s; cached checks do not use this request budget. Unchecked packages remain visible.`;
+    $("#aiConfig").textContent = `${config.ai.provider} · ${config.ai.model} · up to ${config.ai.max_findings} findings per scan · request timeout ${config.ai.timeout_seconds}s. Start Ollama and install this model first.`;
     updateScanControls();
   } catch (error) {
     $("#uploadLimits").textContent = "Upload settings unavailable.";
@@ -227,6 +229,7 @@ function renderReport(data) {
   for (const warning of data.analysis_warnings || []) addText(warnings, "p", `${warning.file}: ${warning.message}`);
   renderFindings();
   renderDependencies(data);
+  renderAI(data.ai);
   $("#intelligenceNotice").textContent = data.intelligence_notice;
   const references = $("#scanReferences");
   references.replaceChildren();
@@ -244,11 +247,12 @@ scanButton.addEventListener("click", async () => {
   const body = new FormData();
   body.append("online_lookup", $("#onlineLookup").checked);
   body.append("dependency_lookup", $("#dependencyLookup").checked);
+  body.append("ai_explain", $("#aiExplain").checked);
   for (const file of selection.accepted) body.append("files", file, file.webkitRelativePath || file.name);
   scanning = true;
   updateScanControls();
   $("#scanView").setAttribute("aria-busy", "true");
-  setStatus(status, "Scanning selected files… Online references may take a little longer.");
+  setStatus(status, "Scanning selected files… Optional lookups and local AI may take a little longer.");
   try {
     const response = await fetch("/api/scan", {method: "POST", body});
     const data = await response.json();
@@ -308,3 +312,31 @@ $("#lookupForm").addEventListener("submit", async event => {
     $("#lookupResults").removeAttribute("aria-busy");
   }
 });
+
+function renderAI(ai) {
+  $("#aiSection").hidden = false;
+  const parent = $("#aiResults");
+  parent.replaceChildren();
+  if (!ai) {
+    $("#aiStatus").textContent = "This server returned no AI status. Restart the scanner and refresh this page, then enable Explain findings with Ollama and scan again.";
+    return;
+  }
+  if (ai.status === "disabled") {
+    $("#aiStatus").textContent = "AI explanations were off for this scan. Enable Explain findings with Ollama on the Scan source page and run the scan again.";
+    return;
+  }
+  $("#aiStatus").textContent = `${ai.model || ai.requested_model} · ${ai.status}. ${ai.notice}`;
+  if (ai.warning) addText(parent, "p", ai.warning, "notice");
+  if (ai.status === "no_findings") addText(parent, "p", "No rule findings to explain. AI does not independently search for vulnerabilities.");
+  if (ai.omitted_findings) addText(parent, "p", `${ai.omitted_findings} additional finding(s) were not explained because of the per-scan limit.`);
+  for (const entry of ai.explanations || []) {
+    const card = document.createElement("article");
+    card.className = "finding reference-card";
+    addText(card, "h3", `${entry.file}:${entry.line} · ${entry.rule_id}`);
+    for (const [label, key] of [["AI explanation", "explanation"], ["Suggested fix", "remediation"], ["Needs verification", "limitation"]]) {
+      addText(card, "h4", label);
+      addText(card, "p", entry[key]);
+    }
+    parent.append(card);
+  }
+}

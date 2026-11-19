@@ -58,7 +58,7 @@ class LocalOnlyMiddleware:
             return await JSONResponse({"detail": message}, status_code=code)(scope, receive, send)
 
         async def private_send(event):
-            if event["type"] == "http.response.start" and scope["path"].startswith("/api/"):
-                event = {**event, "headers": [*event.get("headers", []), (b"cache-control", b"no-store")]}
+            if event["type"] == "http.response.start":
+                event = {**event, "headers": [(key, value) for key, value in event.get("headers", []) if key.lower() != b"cache-control"] + [(b"cache-control", b"no-store")]}
             await send(event)
         await self.app(scope, receive, private_send)

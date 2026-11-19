@@ -41,3 +41,18 @@ HTML alone is insufficient.
 The existing sidebar anchors, semantic headings, focus indicators, skip link,
 status regions, native form controls, and responsive styles are implemented.
 Their presence is not proof that this walkthrough has passed.
+
+## Optional Ollama integration (manual verification pending)
+
+- Install Ollama and pull `qwen2.5-coder:3b`; restart the scanner with `.env` loaded.
+- Confirm **Explain findings with Ollama** defaults off and is reachable with the keyboard.
+- Upload `examples/vulnerable_python.py`, enable AI, and scan. Confirm the separate AI explanations section labels model output as unverified and shows file/line/rule references.
+- Verify severity filtering still affects rule cards independently of AI explanations.
+- Download JSON and text reports; verify AI text, model, timestamp, prompt version, and input hash are included.
+- Stop Ollama and repeat: confirm a visible AI warning and intact rule results.
+- Scan safe code with AI enabled: confirm “no findings to explain” and no implication of AI security validation.
+- Verify AI content wraps on mobile and at 200% zoom.
+
+Automated coverage uses simulated Ollama responses. A live HTTP scan of `examples/vulnerable_browser.js` with local `qwen2.5-coder:3b` returned complete explanations for all three findings on November 18, 2026. This verifies connectivity and response handling; model quality and browser layout have not been signed off.
+
+The app now versions the main JavaScript URL and serves HTML/static assets with `Cache-Control: no-store`. AI results explicitly report disabled or missing server output instead of silently hiding the section. Refresh the browser after updating to load these changes.

@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
+from app.ai import LocalAI
 from app.intelligence import CVE_PATTERN, MAX_LOOKUPS, Intelligence, validate_cve
 from app.scanner import SUPPORTED_EXTENSIONS, analyze_source, display_filename
 from app.uploads import MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, parse_upload
@@ -15,6 +16,7 @@ from app.dependency_intelligence import DependencyIntelligence, MAX_OSV_REQUESTS
 
 app = FastAPI(title="Local Vulnerability Scanner")
 app.add_middleware(LocalOnlyMiddleware)
+local_ai = LocalAI()
 intelligence = Intelligence()
 dependency_intelligence = DependencyIntelligence(intelligence)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -33,6 +35,7 @@ async def health() -> dict[str, str]:
 @app.get("/api/config")
 async def configuration() -> dict[str, object]:
     return {
+        "ai": local_ai.config(),
         "limits": {"files": MAX_FILES, "file_bytes": MAX_FILE_BYTES, "total_bytes": MAX_TOTAL_BYTES},
         "supported_extensions": sorted(SUPPORTED_EXTENSIONS),
         "max_cve_lookups": MAX_LOOKUPS,
@@ -48,14 +51,15 @@ async def configuration() -> dict[str, object]:
         "files": {"type": "array", "items": {"type": "string", "format": "binary"}},
         "online_lookup": {"type": "boolean", "default": False},
         "dependency_lookup": {"type": "boolean", "default": False},
+        "ai_explain": {"type": "boolean", "default": False},
     }}}
 }}})
 async def upload_scan(request: Request) -> dict[str, object]:
-    async with parse_upload(request) as (files, online_lookup, dependency_lookup):
-        return await scan(files, online_lookup, dependency_lookup)
+    async with parse_upload(request) as (files, online_lookup, dependency_lookup, ai_explain):
+        return await scan(files, online_lookup, dependency_lookup, ai_explain)
 
 
-async def scan(files: list[UploadFile], online_lookup: bool = False, dependency_lookup: bool = False) -> dict[str, object]:
+async def scan(files: list[UploadFile], online_lookup: bool = False, dependency_lookup: bool = False, ai_explain: bool = False) -> dict[str, object]:
     if not files:
         raise HTTPException(status_code=400, detail="Choose at least one source file.")
     if len(files) > MAX_FILES:
@@ -132,7 +136,9 @@ async def scan(files: list[UploadFile], online_lookup: bool = False, dependency_
             references.append(reference)
     dependency_results = await run_in_threadpool(dependency_intelligence.lookup_many, dependencies, dependency_lookup) if dependencies else []
     advisory_count = sum(not advisory.get("withdrawn") for result in dependency_results for advisory in result["advisories"])
+    ai_result = await run_in_threadpool(local_ai.explain, findings, ai_explain)
     return {
+        "ai": ai_result,
         "files_scanned": scanned_files,
         "skipped_files": skipped_files,
         "analysis_warnings": analysis_warnings,

@@ -21,7 +21,7 @@ class BoundedMultipartParser(MultiPartParser):
     spool_max_size = MAX_FILE_BYTES + 1
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, max_files=MAX_FILES, max_fields=2, max_part_size=4096, **kwargs)
+        super().__init__(*args, max_files=MAX_FILES, max_fields=3, max_part_size=4096, **kwargs)
         self.total_file_bytes = 0
         self.finished = False
 
@@ -48,8 +48,8 @@ class BoundedMultipartParser(MultiPartParser):
         part = self._current_part
         if part.file and part.field_name != "files":
             raise MultiPartException('File parts must use the field name "files".')
-        if not part.file and part.field_name not in {"online_lookup", "dependency_lookup"}:
-            raise MultiPartException('Only the optional "online_lookup" and "dependency_lookup" text fields are supported.')
+        if not part.file and part.field_name not in {"online_lookup", "dependency_lookup", "ai_explain"}:
+            raise MultiPartException('Only the optional "online_lookup", "dependency_lookup", and "ai_explain" text fields are supported.')
 
     def on_part_data(self, data, start, end):
         if self._current_part.file is not None:
@@ -99,7 +99,7 @@ async def parse_upload(request: Request):
         if not parser.finished:
             raise HTTPException(400, "Incomplete multipart upload. Select the files and try again.")
         flags = []
-        for name in ("online_lookup", "dependency_lookup"):
+        for name in ("online_lookup", "dependency_lookup", "ai_explain"):
             options = form.getlist(name)
             if len(options) > 1:
                 raise HTTPException(400, f"Provide {name} only once.")

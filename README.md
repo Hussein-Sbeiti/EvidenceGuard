@@ -14,11 +14,11 @@ and [examples/TEST_RESULTS.md](examples/TEST_RESULTS.md) for observed endpoint r
 - Parses exact dependency pins locally and optionally queries OSV, with separate inventory, unresolved-entry, advisory-evidence, and fixed-version reporting.
 - Shows upload limits and reasons for skipped files, supports severity filtering, and downloads the latest completed scan as JSON or a readable text report.
 - Uses local heuristic rules for examples such as dynamic code execution, unsafe Python deserialization, shell command construction, risky HTML insertion, hard-coded credentials, and dynamically constructed SQL queries.
-- Does not save uploaded source files or send them to an external service.
+- Does not save uploaded source files; optional AI sends bounded flagged excerpts to local Ollama.
 - Optionally looks up CVE IDs mentioned in uploaded source using CVE.org and NVD; displays exact CVE-linked Exploit-DB metadata from a local CSV index.
 - Includes a manual CVE lookup, persistent SQLite cache, provider throttling, and graceful partial results.
 
-This includes CVE/exploit reference lookups, but is **not yet an AI model or a complete vulnerability scanner**. The rule catalog detects patterns associated with vulnerability classes; it cannot tell whether an application is exploitable, and it can miss issues or report false positives. Suggested fixes are examples, not automatic patches. Do not treat a clean scan as proof of security.
+This includes CVE/exploit reference lookups and optional local AI explanations, but is **not a complete vulnerability scanner**. The rule catalog detects patterns associated with vulnerability classes; it cannot tell whether an application is exploitable, and it can miss issues or report false positives. Suggested fixes are examples, not automatic patches. Do not treat a clean scan as proof of security.
 
 ## Run locally
 
@@ -85,6 +85,51 @@ exploitability, and fixed boundaries are not automatically selected upgrades.
 See [dependency details and fixture steps](docs/DEPENDENCY_SCANNING.md) for supported
 formats, privacy, limits, pagination, and uncertainty handling.
 
+## Optional local AI with Ollama
+
+The **Explain findings with Ollama** checkbox asks a local model to explain existing
+rule findings and suggest defensive fixes. It is off by default. AI does not add,
+remove, validate, or change the severity of rule findings. There is no fine-tuning,
+training-data collection, or measured AI accuracy in this integration.
+
+Install [Ollama](https://ollama.com/download), then run:
+
+```bash
+ollama pull qwen2.5-coder:3b
+ollama serve
+```
+
+If the Ollama desktop app is already serving, do not start a second server.
+The default is the [Qwen 2.5 Coder 3B model](https://ollama.com/library/qwen2.5-coder:3b).
+To use another installed local model, set `OLLAMA_MODEL` in `.env` and restart:
+
+```bash
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload --env-file .env
+```
+
+Open <http://127.0.0.1:8001>, upload a source example, select **Explain findings with
+Ollama**, and scan. Results have a separate **AI explanations** section. Both JSON
+and readable exports include AI output, status, model tag, UTC timestamp, prompt
+version, input SHA256, and file/line/rule references. Model tags are not immutable
+model hashes. Reports remain in browser memory until downloaded; the application
+stores no AI history or training records.
+
+The client uses Ollama's [chat API](https://docs.ollama.com/api/chat) at the fixed
+`http://127.0.0.1:11434/api/chat` address, ignores proxy settings, and refuses redirects.
+Use a downloaded local model and configure Ollama without cloud inference if source
+must remain on the machine. Only the first five findings (in severity/file/line
+order) are explained per scan. Each input includes the rule description,
+recommendation, line, CWE, and at most 300 characters of evidence. Credential-rule
+excerpts are withheld; other snippets may still contain sensitive values. Full files
+and dependency manifests are not supplied to the model.
+
+One generation is allowed at a time, with a 60-second socket timeout, bounded token
+and response sizes, and no automatic retries. Missing models, unavailable Ollama,
+busy generation, truncated output, or invalid JSON produce a visible warning while
+preserving rule results. A clean rule scan makes no model request. Prompt instructions
+ask the model to treat source as untrusted, but model advice can still be manipulated
+or incorrect; all generated text is rendered as plain text and requires human review.
+
 ## Test
 
 ```bash
@@ -114,7 +159,7 @@ hashes, and parser versions. The original [regex baseline](evaluation/baseline/r
 [pre-SQL report](evaluation/pre-sql/report.md) are preserved. SQL detection expands the catalog;
 the SQL diagnostic now expects the new rule instead of treating that weakness as unsupported.
 All 65 labels are explicitly awaiting [independent review](evaluation/INDEPENDENT_REVIEW.md).
-Passing these cases does not estimate real-world accuracy. AI work remains deferred.
+Passing these cases does not estimate real-world accuracy or model explanation quality.
 
 ## How it works
 

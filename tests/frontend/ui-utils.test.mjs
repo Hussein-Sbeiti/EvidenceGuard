@@ -93,3 +93,11 @@ test("dependency reports preserve unresolved entries, package location, status, 
   for (const expected of ["requests@2.0.0", "requirements.txt · line 1", "unresolved", "No exact version", "OSV: partial", "More pages remain", "3.0.0", "Affected-version evidence", "Check installation"]) assert.ok(text.includes(expected), `Missing ${expected}`);
   assert.ok(!text.includes("No advisories returned for this completed query"));
 });
+
+test("AI report preserves unverified output, model metadata, failures, and omitted findings", () => {
+  const base = {completed_at: "now", summary: {files_scanned: 1, findings: 0, high: 0, medium: 0}, files_scanned: [], findings: [], intelligence: []};
+  const text = buildReadableReport({...base, ai: {status: "partial", model: "test:1", generated_at: "now", prompt_version: "v1", input_sha256: "abc", omitted_findings: 2, notice: "Review model output.", explanations: [{file: "a.py", line: 2, rule_id: "PY-EVAL", explanation: "Risk", remediation: "Parse data", limitation: "Check origin"}]}});
+  for (const value of ["UNVERIFIED MODEL OUTPUT", "test:1", "Input SHA256: abc", "a.py:2 (PY-EVAL)", "Parse data", "Check origin", "Not explained due to limit: 2"]) assert.ok(text.includes(value), value);
+  const failed = buildReadableReport({...base, ai: {status: "unavailable", requested_model: "test:1", warning: "Start Ollama."}});
+  assert.ok(failed.includes("Start Ollama."));
+});

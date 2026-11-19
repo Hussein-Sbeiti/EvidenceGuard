@@ -67,6 +67,14 @@ export function buildReadableReport(data) {
       for (const advisory of result.advisories) lines.push(advisory.id, advisory.url, advisory.summary, `Applicability: ${advisory.applicability}`, `Severity: ${advisory.severity}`, `Withdrawn: ${advisory.withdrawn || "no"}`, `Reported fixed versions: ${advisory.fixed_versions.join(", ") || "not supplied"}`, advisory.notice, "Affected-version evidence:", JSON.stringify(advisory.affected, null, 2));
     }
   }
+  if (data.ai) {
+    const ai = data.ai;
+    lines.push("", "AI EXPLANATIONS — UNVERIFIED MODEL OUTPUT", `Status: ${ai.status}`, `Model: ${ai.model || ai.requested_model}`, ai.notice || "");
+    if (ai.generated_at) lines.push(`Generated: ${ai.generated_at}`, `Prompt version: ${ai.prompt_version}`, `Input SHA256: ${ai.input_sha256 || "not sent"}`);
+    if (ai.warning) lines.push(ai.warning);
+    if (ai.omitted_findings) lines.push(`Not explained due to limit: ${ai.omitted_findings}`);
+    for (const entry of ai.explanations || []) lines.push("", `${entry.file}:${entry.line} (${entry.rule_id})`, `AI explanation: ${entry.explanation}`, `Suggested fix: ${entry.remediation}`, `Needs verification: ${entry.limitation}`);
+  }
   lines.push("", "DATABASE REFERENCES — APPLICABILITY UNVERIFIED", data.intelligence_notice || "");
   if (Object.keys(data.cve_mentions || {}).length) lines.push(`CVE mentions: ${Object.keys(data.cve_mentions).join(", ")}`);
   for (const reference of data.intelligence || []) {

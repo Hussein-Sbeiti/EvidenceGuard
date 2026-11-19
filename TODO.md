@@ -1,8 +1,8 @@
 # Project To-do List
 
-Latest recorded verification: **96 backend tests and 9 frontend utility tests pass**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
+Latest recorded verification: **105 backend tests and 12 frontend tests pass**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
 
-Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Keep AI work until the non-AI scanner tasks are finished.
+Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Optional Ollama explanations are now integrated at user request; remaining non-AI review work is still open.
 
 ## Scanner quality
 
@@ -45,10 +45,10 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 - [ ] Record test results and limitations in the school-project presentation.
 - [ ] Review and push each completed batch to GitHub; keep .env and downloaded data/cache files excluded.
 
-## AI features and agent evaluation — do last
+## AI features and agent evaluation
 
-- [ ] Add an optional local AI model to explain findings; clearly distinguish model output from verified rule results.
-- [ ] Define a narrow agent task: explain scanner findings and suggest defensive fixes for human review.
+- [x] Add an optional local AI model to explain findings; clearly distinguish model output from verified rule results.
+- [x] Define a narrow agent task: explain scanner findings and suggest defensive fixes for human review.
 - [ ] Build a labeled training/evaluation dataset from permitted, documented sources and reviewed examples.
 - [ ] Store each run's model/version, rule or finding ID, input reference, generated output, timestamp, and dataset/source version.
 - [ ] Label outcomes as true positive, false positive, true negative, or false negative against reviewed ground truth.
