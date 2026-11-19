@@ -22,6 +22,8 @@ This includes CVE/exploit reference lookups and optional local AI explanations, 
 
 ## Run locally
 
+See [setup for Windows, macOS, and Linux](docs/SETUP.md) for platform-specific commands and Ollama setup.
+
 Requires Python 3.10 or newer.
 
 ```bash
@@ -109,10 +111,13 @@ To use another installed local model, set `OLLAMA_MODEL` in `.env` and restart:
 
 Open <http://127.0.0.1:8001>, upload a source example, select **Explain findings with
 Ollama**, and scan. Results have a separate **AI explanations** section. Both JSON
-and readable exports include AI output, status, model tag, UTC timestamp, prompt
+and readable exports include a run ID, AI output, status, model tag, UTC timestamp, prompt
 version, input SHA256, and file/line/rule references. Model tags are not immutable
 model hashes. Reports remain in browser memory until downloaded; the application
-stores no AI history or training records.
+does not automatically persist uploaded-source AI history or training records.
+The separate [development evaluator](docs/AI_EVALUATION.md) can save runs on the
+repository synthetic corpus, pair them with rule results, and preserve human
+review scores and rationale without performing any training.
 
 The client uses Ollama's [chat API](https://docs.ollama.com/api/chat) at the fixed
 `http://127.0.0.1:11434/api/chat` address, ignores proxy settings, and refuses redirects.
@@ -130,6 +135,9 @@ preserving rule results. A clean rule scan makes no model request. Prompt instru
 ask the model to treat source as untrusted, but model advice can still be manipulated
 or incorrect; all generated text is rendered as plain text and requires human review.
 
+Use **Check local AI** to check Ollama/model availability without sending source
+or starting generation. An installed model can still fail at generation time.
+
 ## Test
 
 ```bash
@@ -140,6 +148,7 @@ Optional frontend checks require Node.js (the application itself does not need N
 
 ```bash
 node tests/frontend/ui-utils.test.mjs
+node tests/frontend/ai-ui.test.mjs
 node --check app/static/app.js
 ```
 

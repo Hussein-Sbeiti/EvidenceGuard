@@ -47,6 +47,8 @@
             <div class="scan-options"><h2>Local AI explanations</h2>
               <label class="checkbox-row"><input id="aiExplain" type="checkbox"><span><strong>Explain findings with Ollama</strong><span class="muted">Send rule descriptions and short flagged excerpts to local Ollama. Credential-rule excerpts are withheld. AI suggestions need human review.</span></span></label>
               <p id="aiConfig" class="muted">Loading local AI settings…</p>
+              <button id="checkAI" class="secondary" type="button">Check local AI</button>
+              <p id="aiConnection" class="muted" role="status" aria-live="polite"></p>
             </div>
             <div class="scan-actions"><button class="primary" id="scanButton" type="button" disabled>Scan selected files <span aria-hidden="true">→</span></button><span class="muted">Files are read in memory.</span></div>
             <p id="status" role="status" aria-live="polite"></p>
@@ -67,7 +69,9 @@
           <p class="muted export-note">Reports include flagged source snippets. Review them before sharing.</p>
           <details id="scanFiles" class="panel compact-panel"><summary id="scanFilesSummary">Files in this scan</summary><ul id="scanFilesList" class="file-list"></ul></details>
           <div id="analysisWarnings" class="analysis-warnings" role="status" hidden></div>
-          <section aria-labelledby="findingsTitle"><div class="section-heading"><h2 id="findingsTitle">Code findings</h2><label class="filter-label" for="severityFilter">Severity <select id="severityFilter"><option value="all">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label></div><p class="muted">CWE (Common Weakness Enumeration) names describe the kind of software weakness.</p><div id="results" aria-live="polite"></div></section>
+          <details id="codeFindings" class="panel code-findings" open>
+            <summary>Code findings <span class="muted">· Rule results and source evidence</span></summary>
+            <div class="section-heading"><h2 id="findingsTitle">Rule findings</h2><label class="filter-label" for="severityFilter">Severity <select id="severityFilter"><option value="all">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label></div><p class="muted">CWE (Common Weakness Enumeration) names describe the kind of software weakness.</p><div id="results" aria-live="polite"></div></details>
           <section id="aiSection" class="reference-section" aria-labelledby="aiTitle" hidden><div class="section-heading"><h2 id="aiTitle">AI explanations</h2><span class="badge">Unverified model output</span></div><p id="aiStatus" class="muted"></p><div id="aiResults"></div></section>
           <section id="dependenciesSection" class="reference-section" aria-labelledby="dependenciesTitle" hidden>
             <div class="section-heading"><h2 id="dependenciesTitle">Dependency review</h2><span class="badge">OSV-reported matches</span></div>

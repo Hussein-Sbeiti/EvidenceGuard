@@ -70,6 +70,7 @@ export function buildReadableReport(data) {
   if (data.ai) {
     const ai = data.ai;
     lines.push("", "AI EXPLANATIONS — UNVERIFIED MODEL OUTPUT", `Status: ${ai.status}`, `Model: ${ai.model || ai.requested_model}`, ai.notice || "");
+    if (ai.run_id) lines.push(`Run ID: ${ai.run_id}`);
     if (ai.generated_at) lines.push(`Generated: ${ai.generated_at}`, `Prompt version: ${ai.prompt_version}`, `Input SHA256: ${ai.input_sha256 || "not sent"}`);
     if (ai.warning) lines.push(ai.warning);
     if (ai.omitted_findings) lines.push(`Not explained due to limit: ${ai.omitted_findings}`);

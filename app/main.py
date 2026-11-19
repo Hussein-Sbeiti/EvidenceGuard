@@ -46,6 +46,11 @@ async def configuration() -> dict[str, object]:
     }
 
 
+@app.get("/api/ai/status")
+async def ai_status() -> dict:
+    return await run_in_threadpool(local_ai.status)
+
+
 @app.post("/api/scan", openapi_extra={"requestBody": {"required": True, "content": {
     "multipart/form-data": {"schema": {"type": "object", "required": ["files"], "properties": {
         "files": {"type": "array", "items": {"type": "string", "format": "binary"}},

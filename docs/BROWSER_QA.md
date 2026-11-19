@@ -56,3 +56,18 @@ Their presence is not proof that this walkthrough has passed.
 Automated coverage uses simulated Ollama responses. A live HTTP scan of `examples/vulnerable_browser.js` with local `qwen2.5-coder:3b` returned complete explanations for all three findings on November 18, 2026. This verifies connectivity and response handling; model quality and browser layout have not been signed off.
 
 The app now versions the main JavaScript URL and serves HTML/static assets with `Cache-Control: no-store`. AI results explicitly report disabled or missing server output instead of silently hiding the section. Refresh the browser after updating to load these changes.
+
+### AI-first report layout (manual verification pending)
+
+- With AI output available, confirm AI explanations appear first with all explanation/fix/verification text visible, and Code findings starts collapsed.
+- Use Tab and Enter/Space to expand Code findings; check severity filtering and source evidence.
+- With AI off, confirm Code findings starts open. With unavailable AI or no explanations, confirm rule results remain open and the AI status is visible.
+- Repeat with a second scan using a different AI setting; verify section order and dropdown state reset for the new report.
+- Run a fresh AI scan to review the expanded model explanations; older downloaded reports keep their original text.
+
+### Local AI readiness check (manual browser verification pending)
+
+- Click **Check local AI**; verify configured model/status appears and no scan starts.
+- Stop Ollama and retry; verify a readable unavailable status and an enabled retry button.
+- Configure a missing local model and restart the scanner; verify model_missing guidance.
+- Verify the check button and resulting status work with keyboard navigation and a screen reader.

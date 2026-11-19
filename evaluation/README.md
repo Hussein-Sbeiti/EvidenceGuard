@@ -81,3 +81,10 @@ grammars rather than the former lexer. Syntax recovery is reported to users;
 complete parsing does not imply complete semantic analysis or cross-file binding
 resolution. Preserve the baseline reports and review provenance when changing
 cases. Independent review and a larger held-out benchmark are still needed.
+
+## Optional explanation-agent evaluation
+
+The separate `python -m app.ai_evaluate` command pairs these rule outcomes with
+opt-in local model explanations and an auditable human scoring workflow. It uses
+the existing development cases, does not train a model, and does not claim an
+independent AI detection benchmark. See [AI evaluation](../docs/AI_EVALUATION.md).

@@ -1,6 +1,6 @@
 # Project To-do List
 
-Latest recorded verification: **105 backend tests and 12 frontend tests pass**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
+Latest recorded verification: **115 backend tests and 13 frontend tests pass**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
 
 Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Optional Ollama explanations are now integrated at user request; remaining non-AI review work is still open.
 
@@ -30,6 +30,8 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 
 ## App experience and safety
 
+- [x] Show AI explanations first when enabled, collapse rule findings into a dropdown, and request fuller explanations, defensive steps, and review guidance.
+
 - [x] Make the GUI cleaner and easier to use, with a navigation sidebar and slightly darker colors.
 - [x] Show skipped files and upload limits clearly in the selection and results.
 - [x] Add a way to export findings as JSON or a readable text report.
@@ -39,7 +41,7 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 
 ## Project delivery
 
-- [ ] Document setup and run instructions for Windows, macOS, and Linux.
+- [x] Document setup and run instructions for Windows, macOS, and Linux in docs/SETUP.md (execution verified on Linux; other platform walkthroughs pending).
 - [x] Add clearly labeled vulnerable examples and a safe comparison for repeatable scans.
 - [x] Test example uploads through the running website's HTTP endpoints and verify CVE.org, NVD, and Exploit-DB results; document results and limitations in examples/TEST_RESULTS.md.
 - [ ] Record test results and limitations in the school-project presentation.
@@ -47,13 +49,18 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 
 ## AI features and agent evaluation
 
+Training and fine-tuning are deferred at the user’s request. The development evaluation CLI uses existing synthetic cases; it does not create a training dataset or update model weights. See docs/AI_EVALUATION.md.
+
+- [x] Add a local AI readiness check in the UI without starting generation or sending source.
+
 - [x] Add an optional local AI model to explain findings; clearly distinguish model output from verified rule results.
 - [x] Define a narrow agent task: explain scanner findings and suggest defensive fixes for human review.
 - [ ] Build a labeled training/evaluation dataset from permitted, documented sources and reviewed examples.
-- [ ] Store each run's model/version, rule or finding ID, input reference, generated output, timestamp, and dataset/source version.
-- [ ] Label outcomes as true positive, false positive, true negative, or false negative against reviewed ground truth.
-- [ ] Record a documented reward/score for each run, including correctness, useful evidence/line references, and safe, relevant remediation.
-- [ ] Keep reviewer feedback and reward rationale so scores can be audited; do not treat unreviewed model confidence as ground truth.
+- [x] Save explicit development evaluation runs with model tags, observed model digest, rule/finding references, output, timestamps, and dataset/source/prompt/analyzer hashes. Browser upload scans remain export-only.
+- [x] Preserve deterministic TP/FP/TN/FN outcomes against existing provisional fixture labels in paired AI evaluation reports; do not assign independent detection outcomes to the explanation-only agent.
+- [ ] Obtain independently reviewed ground truth and score explanation quality across a broader evaluation set.
+- [x] Implement a documented human scoring rubric for correctness, evidence/line references, and safe remediation; summaries use latest reviews and leave unreviewed outputs unscored. No scores are used for training.
+- [x] Preserve reviewer IDs, feedback, ratings, rationale, timestamps, and prior review files bound to the exact report hash; identity is self-reported and files are not tamper-proof.
 - [ ] Separate training, validation, and held-out test data to prevent leakage; report precision, recall, and false-positive rate.
-- [ ] Compare the agent to the existing deterministic rules and keep an easy way to disable the model.
+- [x] Pair the explanation agent’s outputs with deterministic findings/recommendations on the same cases; default AI off in UI and CLI, and keep detector metrics separate from human explanation scores.
 - [ ] Exclude secrets, personal data, unlicensed content, and exploit payloads from stored training records.

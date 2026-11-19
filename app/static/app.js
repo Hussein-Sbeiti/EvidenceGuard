@@ -314,7 +314,14 @@ $("#lookupForm").addEventListener("submit", async event => {
 });
 
 function renderAI(ai) {
-  $("#aiSection").hidden = false;
+  const aiSection = $("#aiSection");
+  const codeFindings = $("#codeFindings");
+  const aiEnabled = Boolean(ai && ai.status !== "disabled");
+  // Keep rule evidence accessible if AI could not produce explanations.
+  codeFindings.open = !aiEnabled || !ai.explanations?.length;
+  if (aiEnabled) codeFindings.before(aiSection);
+  else codeFindings.after(aiSection);
+  aiSection.hidden = false;
   const parent = $("#aiResults");
   parent.replaceChildren();
   if (!ai) {
@@ -332,11 +339,32 @@ function renderAI(ai) {
   for (const entry of ai.explanations || []) {
     const card = document.createElement("article");
     card.className = "finding reference-card";
-    addText(card, "h3", `${entry.file}:${entry.line} · ${entry.rule_id}`);
+    const finding = lastReport?.findings?.[entry.finding_index];
+    addText(card, "h3", finding?.title || entry.rule_id);
+    addText(card, "p", `${entry.file} · Line ${entry.line} · ${entry.rule_id}`, "location");
     for (const [label, key] of [["AI explanation", "explanation"], ["Suggested fix", "remediation"], ["Needs verification", "limitation"]]) {
-      addText(card, "h4", label);
-      addText(card, "p", entry[key]);
+      const section = document.createElement("section");
+      section.className = "finding-section";
+      addText(section, "h4", label);
+      addText(section, "p", entry[key], "ai-description");
+      card.append(section);
     }
     parent.append(card);
   }
 }
+
+$("#checkAI").addEventListener("click", async () => {
+  const button = $("#checkAI");
+  button.disabled = true;
+  setStatus($("#aiConnection"), "Checking local Ollama…");
+  try {
+    const response = await fetch("/api/ai/status");
+    if (!response.ok) throw new Error("Unable to check local AI. Restart the scanner and retry.");
+    const data = await response.json();
+    setStatus($("#aiConnection"), `${data.model} · ${data.status}. ${data.message}`, data.status !== "ready");
+  } catch (error) {
+    setStatus($("#aiConnection"), error.message || "Local AI check failed.", true);
+  } finally {
+    button.disabled = false;
+  }
+});
