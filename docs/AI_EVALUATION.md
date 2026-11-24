@@ -2,7 +2,8 @@
 
 The agent's task is narrow: explain findings already detected by rules and suggest
 defensive fixes for a person to review. It has no execution tools, cannot modify
-uploads, and cannot run repairs. Model training and fine-tuning are deferred.
+uploads, and cannot run repairs. The proposed gradual fine-tuning workflow is in
+[AI training plan](AI_TRAINING_PLAN.md); this evaluator does not update model weights.
 
 ## Development runs
 

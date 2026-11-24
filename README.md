@@ -118,6 +118,11 @@ does not automatically persist uploaded-source AI history or training records.
 The separate [development evaluator](docs/AI_EVALUATION.md) can save runs on the
 repository synthetic corpus, pair them with rule results, and preserve human
 review scores and rationale without performing any training.
+The [CSC 733 AI training plan](docs/AI_TRAINING_PLAN.md) describes a proposed small
+LoRA pilot, reviewed data, overfitting controls, and later detection/patch capabilities.
+Training has not started and does not happen during scans.
+The [SQL pilot workflow](training/README.md) includes draft examples and commands
+to validate, preview, and prepare reviewed data without training or downloading weights.
 
 The client uses Ollama's [chat API](https://docs.ollama.com/api/chat) at the fixed
 `http://127.0.0.1:11434/api/chat` address, ignores proxy settings, and refuses redirects.

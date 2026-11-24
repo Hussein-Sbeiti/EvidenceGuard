@@ -1,6 +1,6 @@
 # Project To-do List
 
-Latest recorded verification: **115 backend tests and 13 frontend tests pass**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
+Latest recorded verification: **130 backend tests pass** (November 23, 2026); **13 frontend tests passed in the earlier verification**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
 
 Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Optional Ollama explanations are now integrated at user request; remaining non-AI review work is still open.
 
@@ -49,7 +49,16 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 
 ## AI features and agent evaluation
 
-Training and fine-tuning are deferred at the user’s request. The development evaluation CLI uses existing synthetic cases; it does not create a training dataset or update model weights. See docs/AI_EVALUATION.md.
+The current goal is gradual, lightweight specialization of Qwen 2.5 Coder 3B for vulnerable-code identification and defensive fixes. The researched approach is in [docs/AI_TRAINING_PLAN.md](docs/AI_TRAINING_PLAN.md). Training has not started. The development evaluation CLI still uses existing synthetic cases and does not create a training dataset or update model weights. See docs/AI_EVALUATION.md.
+
+- [x] Research a staged LoRA/QLoRA approach, context limits, data separation, and overfitting controls for CSC 733.
+- [ ] Verify the AMD GPU training backend and memory with a one-batch smoke test; isolate and pin training dependencies.
+- [x] Define approved-record validation and stable family-based train/validation/test manifests without reusing development fixtures for training; CLI and 15 regression tests implemented in app/training_data.py and tests/test_training_data.py.
+- [x] Author an initial draft of 18 SQL examples in 10 families, with provenance, source hashes, proposed fixes, bounded explanation targets, and pending review/screening; see training/README.md.
+- [ ] Curate 20–30 reviewed Python SQL-injection example families for a pilot, including safe and insufficient-context cases.
+- [ ] Train and compare a small explanation adapter against the unchanged base; retain validation results and rollback artifacts.
+- [ ] Implement and evaluate independent AI detection on bounded code context, including clean code, before claiming AI detection metrics.
+- [ ] Implement reviewable patch proposals and isolated behavior/security verification before applying repairs.
 
 - [x] Add a local AI readiness check in the UI without starting generation or sending source.
 

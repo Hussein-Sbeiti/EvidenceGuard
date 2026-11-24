@@ -1,0 +1,629 @@
+{
+  "schema_version": 1,
+  "version": "sql-pilot-draft-1",
+  "description": "Draft project-authored SQL examples. Independent label review and data screening pending. Never execute as a dataset.",
+  "records": [
+    {
+      "id": "customer_lookup_vulnerable",
+      "family": "customer_lookup",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def lookup_customer(cursor, customer):\n    query = f\"SELECT email FROM customers WHERE customer_name = '{customer}'\"\n    return cursor.execute(query).fetchone()\n",
+      "source_sha256": "2f35406f07c502fa408e4603e90405afd030c1b1047ba583915b04974372ead3",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The formatted customer value becomes part of SQL syntax. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Use a SQLite ? placeholder for customer_name and pass (customer,) separately to execute.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def lookup_customer(cursor, customer):\n    return cursor.execute(\"SELECT email FROM customers WHERE customer_name = ?\", (customer,)).fetchone()\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "Keep the query template fixed and bind lookup values using SQLite ? placeholders. Pass the values as the second execute argument; check the caller for input validation and authorization.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "customer_lookup_safe",
+      "family": "customer_lookup",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def lookup_customer(cursor, customer):\n    return cursor.execute(\"SELECT email FROM customers WHERE customer_name = ?\", (customer,)).fetchone()\n",
+      "source_sha256": "18a4091735e652c33c920fc736e744c0fd2b210ef169468e9da5e6267c1eb6b6",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "update_address_vulnerable",
+      "family": "update_address",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def change_address(cursor, address, account_id):\n    query = \"UPDATE accounts SET postal_address = '\" + address + \"' WHERE account_id = ?\"\n    cursor.execute(query, (account_id,))\n",
+      "source_sha256": "5c1aee4b94ca73e30513efa64a69b2e5d3888528c19ff386c2d62314232ee4a5",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The address is concatenated into SQL even though account_id uses a placeholder. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Bind both address and account_id: execute(\"UPDATE accounts SET postal_address = ? WHERE account_id = ?\", (address, account_id)).",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def change_address(cursor, address, account_id):\n    cursor.execute(\"UPDATE accounts SET postal_address = ? WHERE account_id = ?\", (address, account_id))\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "For an UPDATE, bind every dynamic data value separately, including values in SET and WHERE clauses. Review the whole query because one bound value does not make other interpolated values safe.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "update_address_safe",
+      "family": "update_address",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def change_address(cursor, address, account_id):\n    cursor.execute(\"UPDATE accounts SET postal_address = ? WHERE account_id = ?\", (address, account_id))\n",
+      "source_sha256": "f87127bad11215683102624456e7ac5a0069fa70ac06ddc53a47e97085380e0c",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "delete_session_vulnerable",
+      "family": "delete_session",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def remove_session(cursor, token):\n    query = \"DELETE FROM sessions WHERE session_token = '%s'\" % token\n    cursor.execute(query)\n",
+      "source_sha256": "ded8c4d2731882b4481cb0235ceecec29b7cf334a2a5d2a757aee37d77ac8780",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. Python percent formatting inserts token text into the DELETE statement. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Use execute(\"DELETE FROM sessions WHERE session_token = ?\", (token,)) so SQLite binds the value.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def remove_session(cursor, token):\n    cursor.execute(\"DELETE FROM sessions WHERE session_token = ?\", (token,))\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "For a DELETE, use placeholders for dynamic WHERE values and pass their values separately. Verify the intended row selection and transaction behavior before adopting a change.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "delete_session_safe",
+      "family": "delete_session",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def remove_session(cursor, token):\n    cursor.execute(\"DELETE FROM sessions WHERE session_token = ?\", (token,))\n",
+      "source_sha256": "34bc448e75a8e5ed7b2a97050b0ef4501ba58eb6b10a600a7c04d66bd09f3561",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "insert_note_vulnerable",
+      "family": "insert_note",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def add_note(cursor, note):\n    query = \"INSERT INTO notes (body) VALUES ('{}')\".format(note)\n    cursor.execute(query)\n",
+      "source_sha256": "26a73653230c72894fcf9985b265fd3341661069589ce0e04ea2708c77e44671",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The format call inserts note text directly into the INSERT statement. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Use execute(\"INSERT INTO notes (body) VALUES (?)\", (note,)) rather than Python string formatting.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def add_note(cursor, note):\n    cursor.execute(\"INSERT INTO notes (body) VALUES (?)\", (note,))\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "For an INSERT, keep table and column names fixed and bind the data values separately. Do not replace parameter binding with quoting or Python string formatting.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "insert_note_safe",
+      "family": "insert_note",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def add_note(cursor, note):\n    cursor.execute(\"INSERT INTO notes (body) VALUES (?)\", (note,))\n",
+      "source_sha256": "10ec4502d46c8b6099c640c764147a5b8ef1e2e9affdddd8d244c385a305cd5e",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "search_prefix_vulnerable",
+      "family": "search_prefix",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def search_products(cursor, prefix):\n    query = f\"SELECT sku FROM products WHERE title LIKE '{prefix}%'\"\n    return cursor.execute(query).fetchall()\n",
+      "source_sha256": "4b7940af3c379582467ff99b563930d10d462003cf2417e1ba8db4487a501322",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The formatted prefix is embedded inside the LIKE expression. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Bind the entire LIKE pattern: execute(\"SELECT sku FROM products WHERE title LIKE ?\", (prefix + \"%\",)). Decide separately whether caller-supplied LIKE wildcards are intended.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def search_products(cursor, prefix):\n    return cursor.execute(\"SELECT sku FROM products WHERE title LIKE ?\", (prefix + \"%\",)).fetchall()\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "If the query performs a LIKE search, bind the complete search pattern as a value. Decide separately whether caller-supplied percent and underscore wildcards should be interpreted or matched literally.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "search_prefix_safe",
+      "family": "search_prefix",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def search_products(cursor, prefix):\n    return cursor.execute(\"SELECT sku FROM products WHERE title LIKE ?\", (prefix + \"%\",)).fetchall()\n",
+      "source_sha256": "5b120d40ea4873a48a1599deb3232956e88009a43636f2305f3c1f7d8c0aeb07",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "membership_list_vulnerable",
+      "family": "membership_list",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def list_teams(cursor, names):\n    quoted = \",\".join(\"'\" + name + \"'\" for name in names)\n    query = \"SELECT team_id FROM teams WHERE team_name IN (\" + quoted + \")\"\n    return cursor.execute(query).fetchall()\n",
+      "source_sha256": "ad62777b6a1e1ffe2d82e8b76383afa80ddd1c7d4c52b745b6080f8937b7a1d3",
+      "evidence_lines": [
+        4
+      ],
+      "rationale": "At line 4, execution uses dynamically constructed SQL. The IN clause contains joined name values rather than bound parameters. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Build only a comma-separated sequence of ? placeholders from the number of names, pass tuple(names) separately, and handle the empty list explicitly.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def list_teams(cursor, names):\n    if not names:\n        return []\n    placeholders = \",\".join(\"?\" for _ in names)\n    query = \"SELECT team_id FROM teams WHERE team_name IN (\" + placeholders + \")\"\n    return cursor.execute(query, tuple(names)).fetchall()\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 4 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "If this is an IN query, build only the required number of ? placeholders and bind the values separately. Handle an empty list explicitly and never concatenate quoted input values.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "membership_list_safe",
+      "family": "membership_list",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def list_teams(cursor, names):\n    if not names:\n        return []\n    placeholders = \",\".join(\"?\" for _ in names)\n    query = \"SELECT team_id FROM teams WHERE team_name IN (\" + placeholders + \")\"\n    return cursor.execute(query, tuple(names)).fetchall()\n",
+      "source_sha256": "294a5f28c39f1ca7ce59026569de903f87cf4e82c769b41f0823579fbbebe597",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "report_sort_vulnerable",
+      "family": "report_sort",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def list_invoices(cursor, sort_field):\n    query = f\"SELECT invoice_id, total FROM invoices ORDER BY {sort_field}\"\n    return cursor.execute(query).fetchall()\n",
+      "source_sha256": "281e4983c1d63ff2ad038fda2b7097f13f3903dde87c092035e99426dd9d9002",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The requested sort field is inserted into SQL identifier syntax. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Map accepted sort choices to fixed column names and reject unknown choices. A value placeholder cannot stand in for a column identifier.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def list_invoices(cursor, sort_field):\n    columns = {\"id\": \"invoice_id\", \"amount\": \"total\"}\n    if sort_field not in columns:\n        raise ValueError(\"Unsupported sort field\")\n    query = \"SELECT invoice_id, total FROM invoices ORDER BY \" + columns[sort_field]\n    return cursor.execute(query).fetchall()\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "If dynamic SQL identifiers are needed, map accepted choices to a fixed allowlist of column names and reject unknown choices. Value placeholders cannot substitute for column identifiers.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "report_sort_safe",
+      "family": "report_sort",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def list_invoices(cursor, sort_field):\n    columns = {\"id\": \"invoice_id\", \"amount\": \"total\"}\n    if sort_field not in columns:\n        raise ValueError(\"Unsupported sort field\")\n    query = \"SELECT invoice_id, total FROM invoices ORDER BY \" + columns[sort_field]\n    return cursor.execute(query).fetchall()\n",
+      "source_sha256": "9219a0015f4b3eb8ee9e295f6d9679a646951d90862c659ceb273d23abc53738",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "bounded_limit_vulnerable",
+      "family": "bounded_limit",
+      "language": "python",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "source": "def recent_events(cursor, limit_text):\n    query = \"SELECT event_id FROM events ORDER BY event_id DESC LIMIT \" + limit_text\n    return cursor.execute(query).fetchall()\n",
+      "source_sha256": "2e02aa04a1488aa756737d45faa4b7a49e92f26e0ca3d19bda6fd0520caa394c",
+      "evidence_lines": [
+        3
+      ],
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The LIMIT text is concatenated into the statement as SQL syntax. If the value is untrusted, it may alter the query structure.",
+      "remediation": "Parse the limit as an integer, enforce the documented range, and bind it using LIMIT ? rather than concatenation. Handle invalid input at the caller.",
+      "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "fixed_source": "def recent_events(cursor, limit_text):\n    limit = int(limit_text)\n    if not 1 <= limit <= 100:\n        raise ValueError(\"Limit must be between 1 and 100\")\n    return cursor.execute(\"SELECT event_id FROM events ORDER BY event_id DESC LIMIT ?\", (limit,)).fetchall()\n",
+      "explanation_target": {
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "remediation": "If the query accepts a row limit, parse and bound it as an integer and bind it as a value where supported. Preserve the intended ordering and handle invalid input explicitly.",
+        "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
+      }
+    },
+    {
+      "id": "bounded_limit_safe",
+      "family": "bounded_limit",
+      "language": "python",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "source": "def recent_events(cursor, limit_text):\n    limit = int(limit_text)\n    if not 1 <= limit <= 100:\n        raise ValueError(\"Limit must be between 1 and 100\")\n    return cursor.execute(\"SELECT event_id FROM events ORDER BY event_id DESC LIMIT ?\", (limit,)).fetchall()\n",
+      "source_sha256": "979bb6f7489223f5fced1ae51c4a5f9c4ada15484885be81c0641e308aead5d3",
+      "evidence_lines": [],
+      "rationale": "Within the shown function, SQL values are bound separately or identifiers come from a fixed allowlist.",
+      "remediation": "Preserve this separation and test accepted values and invalid input.",
+      "limitation": "This label covers the shown SQL construction only; it does not establish authorization, schema safety, or application security.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "caller_query_insufficient_context",
+      "family": "caller_query",
+      "language": "python",
+      "label": "insufficient_context",
+      "cwe": "CWE-89",
+      "source": "def fetch_report(cursor, query, parameters):\n    return cursor.execute(query, parameters).fetchall()\n",
+      "source_sha256": "5a762f53ec9859585f23246016e209b65ffc7aacc8ca39ffdab359fd1a1582ad",
+      "evidence_lines": [],
+      "rationale": "The query is supplied by a caller whose construction is not shown.",
+      "remediation": "Inspect the caller and require a fixed query template with separately bound values.",
+      "limitation": "This fragment cannot establish whether query contains user-controlled SQL syntax.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    },
+    {
+      "id": "helper_query_insufficient_context",
+      "family": "helper_query",
+      "language": "python",
+      "label": "insufficient_context",
+      "cwe": "CWE-89",
+      "source": "def summarize(cursor, filters):\n    query, arguments = build_summary_query(filters)\n    cursor.execute(query, arguments)\n    return cursor.fetchone()\n",
+      "source_sha256": "b7fc337f3b4dbc0cc71a5ac5a01f464fa5b177a56fc6618e4f6208f3b8cfe69f",
+      "evidence_lines": [],
+      "rationale": "The query-building helper is outside the supplied context.",
+      "remediation": "Review build_summary_query and verify that it binds values and allowlists any dynamic identifiers.",
+      "limitation": "Neither safety nor a vulnerability can be established without the helper implementation and input contract.",
+      "author": "codex-author",
+      "provenance": {
+        "kind": "project_authored",
+        "origin": "New CSC 733 educational example authored for this repository on 2026-11-23.",
+        "permission": "Project-authored example; no external source copied. Dataset redistribution license has not been assigned."
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      },
+      "screening": {
+        "status": "pending",
+        "reviewer": null,
+        "date": null,
+        "rationale": null
+      }
+    }
+  ]
+}
