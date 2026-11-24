@@ -1,157 +1,134 @@
-# Local Vulnerability Scanner (school-project MVP)
+<div align="center">
 
-A local web app for uploading source files or folders and checking a small, editable catalog of common risky coding patterns. Findings include a file path, line number, severity, CWE category, explanation, and suggested mitigation.
+<img src="assets/branding/evidenceguard-logo.png" alt="EvidenceGuard shield, code brackets, and verification check logo" width="112" height="112">
 
-See [TODO.md](TODO.md) for the project backlog.
-See [downloadable desktop previews](docs/DESKTOP_DISTRIBUTION.md) for the native
-launcher, automatic local AI setup, package builds, and remaining release checks.
-See [examples/README.md](examples/README.md) for educational fixtures and website test steps,
-and [examples/TEST_RESULTS.md](examples/TEST_RESULTS.md) for observed endpoint results.
+<h1>EvidenceGuard</h1>
 
-## What this version does
+<hr>
 
-- Runs locally with a FastAPI backend and a browser UI.
-- Uses a slate sidebar with separate source scan, results, and CVE database views; navigation moves above the content on smaller screens.
-- Accepts source files, folders, requirements.txt, and package-lock.json; scans supported text files in memory.
-- Parses exact dependency pins locally and optionally queries OSV, with separate inventory, unresolved-entry, advisory-evidence, and fixed-version reporting.
-- Shows upload limits and reasons for skipped files, supports severity filtering, and downloads the latest completed scan as JSON or a readable text report.
-- Uses local heuristic rules for examples such as dynamic code execution, unsafe Python deserialization, shell command construction, risky HTML insertion, hard-coded credentials, and dynamically constructed SQL queries.
-- Does not save uploaded source files; optional AI sends bounded flagged excerpts to local Ollama.
-- Optionally looks up CVE IDs mentioned in uploaded source using CVE.org and NVD; displays exact CVE-linked Exploit-DB metadata from a local CSV index.
-- Includes a manual CVE lookup, persistent SQLite cache, provider throttling, and graceful partial results.
+<p><strong>Find risky code. Inspect the evidence. Review the fix.</strong></p>
 
-This includes CVE/exploit reference lookups and optional local AI explanations, but is **not a complete vulnerability scanner**. The rule catalog detects patterns associated with vulnerability classes; it cannot tell whether an application is exploitable, and it can miss issues or report false positives. Suggested fixes are examples, not automatic patches. Do not treat a clean scan as proof of security.
+<p>A local source-code vulnerability scanner with clear findings, optional local AI explanations, and defensive fix guidance.<br>Built with Python, FastAPI, and Ollama for CSC 733.</p>
 
-## Run locally
+<p>
+  <a href="https://github.com/Hussein-Sbeiti/EvidenceGuard/releases"><img src="https://img.shields.io/github/v/release/Hussein-Sbeiti/EvidenceGuard?include_prereleases&amp;label=release&amp;color=3b82f6" alt="Latest preview release"></a>
+  <a href="#download-and-run"><img src="https://img.shields.io/badge/desktop-Linux%20%7C%20macOS-7c3aed" alt="Linux and macOS desktop previews"></a>
+  <a href="#run-from-source"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&amp;logoColor=white" alt="Python 3.10 or newer for source setup"></a>
+  <a href="#local-ai"><img src="https://img.shields.io/badge/AI-local%20Ollama-64748b" alt="Optional local AI with Ollama"></a>
+  <a href="TODO.md"><img src="https://img.shields.io/badge/status-research%20preview-f59e0b" alt="Research preview"></a>
+</p>
 
-See [setup for Windows, macOS, and Linux](docs/SETUP.md) for platform-specific commands and Ollama setup.
+<p>
+  <a href="https://github.com/Hussein-Sbeiti/EvidenceGuard/releases"><strong>Download</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#download-and-run">Getting started</a>
+  &nbsp;·&nbsp;
+  <a href="docs/SETUP.md">Source setup</a>
+  &nbsp;·&nbsp;
+  <a href="docs/AI_TRAINING_PLAN.md">Training roadmap</a>
+  &nbsp;·&nbsp;
+  <a href="TODO.md">Project status</a>
+</p>
 
-Requires Python 3.10 or newer.
+</div>
+
+---
+
+## Download and run
+
+**Start here if you want to use the app.** Python and the scanner libraries are included in the desktop download.
+
+1. Open [Releases](https://github.com/Hussein-Sbeiti/EvidenceGuard/releases) and expand **Assets** under the preview release.
+2. Download the package for your computer:
+
+   | Computer | Download | Open after extracting |
+   | --- | --- | --- |
+   | Linux x86-64 | `VulnAI-Scanner-linux-x86_64.tar.gz` | `VulnAI-Scanner` |
+   | Mac with Apple Silicon (M series) | `VulnAI-Scanner-darwin-arm64.zip` | `VulnAI-Scanner.app` |
+   | Mac with an Intel processor | `VulnAI-Scanner-darwin-x86_64.zip` | `VulnAI-Scanner.app` |
+
+3. Extract the whole archive, then open the app. Keep the extracted Linux folder together.
+4. Your browser opens the local setup page. First-time AI setup downloads the runtime and model; keep internet connected and allow several minutes and at least **10 GB free disk space**. You can open the scanner and use rule checks while AI setup runs.
+5. Once setup finishes, the scanner opens automatically. Later launches reuse the installed files and can work offline. Use **App setup and quit** in the sidebar when you want to stop the local server.
+
+Choose the named app package above; GitHub's **Source code** archives are for developer setup. Windows packaging is planned for a later round.
+
+**Preview status:** the Mac apps are not Apple-notarized, so macOS may block opening them. The Linux download is a development-host preview; compatibility with older distributions still needs testing. See [desktop setup and limitations](docs/DESKTOP_DISTRIBUTION.md) for platform verification, storage locations, and release details.
+
+---
+
+## Scan your code
+
+1. Choose **Scan source** in the sidebar.
+2. Select files or a project folder.
+3. Optionally enable **Explain findings with Ollama**. CVE and dependency lookups are separate, optional internet features.
+4. Click **Scan selected files**.
+5. Review each finding's file, line, CWE, explanation, and suggested mitigation. Export the result as JSON or a readable report when needed.
+
+Try the [educational examples](examples/README.md) for a first scan. Findings and AI advice need review; suggested fixes are not applied automatically.
+
+Upload limits are **50 files**, **512 KB per file**, and **5 MB total**. Use supported UTF-8 source files or dependency manifests; the UI explains skipped files.
+
+### What it checks
+
+- Risky SQL construction, dynamic code execution, unsafe deserialization, shell command construction, HTML insertion, and hard-coded credentials.
+- Python syntax with AST analysis and JavaScript/TypeScript/JSX/TSX with Tree-sitter. Other supported languages have narrower credential-pattern checks.
+- Exact dependency pins in `requirements.txt` and `package-lock.json`, with optional OSV advisory lookups.
+- CVE identifiers through optional CVE.org/NVD queries and locally indexed Exploit-DB references.
+
+A clean result is not proof that code is secure. Rule matches identify candidates for review; database references do not establish exploitability. See the [analysis details](docs/TECHNICAL_REFERENCE.md#how-it-works) and [evaluation notes](evaluation/README.md).
+
+### What stays local
+
+Source files are analyzed in memory and are not saved by the scanner. Optional AI receives short flagged excerpts through local Ollama. Online lookups send CVE IDs or package names/versions; they do not send uploaded source. Exported reports can contain excerpts, so review them before sharing.
+
+---
+
+## Run from source
+
+For development, use Python **3.10+**. Run these commands on Linux/macOS:
 
 ```bash
-cd VULN_AI_SCANNER
+git clone https://github.com/Hussein-Sbeiti/EvidenceGuard.git
+cd EvidenceGuard
 python3 -m venv .venv
-source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
+source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000>. Stop the development server with `Ctrl+C`.
+Open **<http://127.0.0.1:8000>**. Stop the server with `Ctrl+C`.
 
-The upload endpoint limits a scan to 50 files, 512 KB per file, and 5 MB total file data (including skipped files). Streaming multipart limits reject oversized data before file buffers can roll to disk, and a separate raw-body cap allows 256 KB for multipart overhead. Only supported UTF-8 text source files are scanned. The server requires loopback connections and local Host headers; API requests from other origins are rejected. Keep the server bound to `127.0.0.1`. See [upload review](docs/UPLOAD_REVIEW.md) for tested boundaries and limitations.
+Already have a checkout? Start from `cd` into that folder and reuse its environment. For Windows PowerShell, optional `.env` settings, and troubleshooting, follow the [platform setup guide](docs/SETUP.md).
 
-## Free vulnerability intelligence setup
+## Local AI
 
-No key is required to start. CVE.org uses `POST https://search.cve.org/search` with a JSON `cveIds` filter. NVD uses `GET https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=...`. An optional NVD key is sent only in the `apiKey` header.
-
-```bash
-cp .env.example .env
-# Edit .env locally and set NVD_API_KEY to your key (optional).
-python -m app.sync_exploitdb
-python -m uvicorn app.main:app --reload --env-file .env
-```
-
-`.env` is loaded by the uvicorn command above, not automatically by Python. For the sync command, defaults use `data/files_exploits.csv`; set the `EXPLOITDB_CSV` environment variable if you need another path. Both `.env` and downloaded data/cache directories are ignored by Git. Do not put keys in frontend code, source files, or commits.
-
-The sync command downloads only `files_exploits.csv` from the [official Exploit-DB repository](https://gitlab.com/exploit-database/exploitdb). No API key or account is required. Existing indexes are replaced atomically only after validation. Sync attempts are limited to once per 24 hours, including failures; rerun the command daily to refresh. Lookups read the local index, match its `codes` column by exact CVE ID, and return at most 50 metadata references. Exploit code is neither downloaded nor executed. The index modification time is shown so you can assess freshness. Without a readable index, other sources still work.
-
-Use the **Vulnerability database** form to look up a CVE, or enable the upload checkbox to enrich CVE mentions. The API also supports `GET /api/intelligence/CVE-2021-44228` and the optional multipart field `online_lookup=true` on `POST /api/scan` (default false).
-
-Responses preserve provider provenance, retrieval time, record state (including rejected records), CVSS metrics, CNA affected-version data, and NVD CPE configurations. Applicability always remains `unverified`: neither a CVE mention, a keyword match, nor an exploit reference proves the uploaded application is vulnerable. CVE applicability remains separate from the dependency inventory and OSV-reported version queries described below. No AI provider key is needed for this integration.
-
-### Rate limiting and failures
-
-- Each CVE.org/NVD provider allows at most one outgoing request per 6.1 seconds, even when an NVD key is configured. This deliberately conservative rate does not increase with a key.
-- SQLite reservations coordinate processes using the same cache file and survive restarts. Separate machines/cache paths do not share a quota; run a single local instance and avoid other clients using the same public IP/key while scanning.
-- Requests during a provider's interval or cooldown return partial results immediately instead of queuing workers. For multiple uncached CVE mentions, later IDs may need a manual lookup after the interval. There is no background queue or automatic retry loop.
-- Successful lookups, including empty responses, are cached for 24 hours. On refresh failure, stale data is explicitly labeled; cache entries older than 30 days are removed during successful writes.
-- HTTP 403, 429, and 5xx responses cause a cooldown of at least 60 seconds and respect a longer `Retry-After` value (seconds or HTTP date). Network failures/invalid JSON also cause a 60-second cooldown.
-- Each provider request has a 12-second socket timeout and a 4 MB response limit. Network calls run outside the async event loop. A missing provider or inaccessible cache does not prevent heuristic results from being returned. Remote services may still enforce stricter policies; rate limiting cannot guarantee against an IP ban.
-
-Reference documentation: [CVE Search API](https://github.com/CVEProject/CVE-Search-API), [NVD vulnerability API](https://nvd.nist.gov/developers/vulnerabilities), [NVD API guidance](https://nvd.nist.gov/developers/start-here), [SearchSploit manual](https://www.exploit-db.com/searchsploit).
-
-## Dependency scanning
-
-Upload `requirements.txt` and/or `package-lock.json` alongside source or by themselves.
-Their inventory is parsed locally even with networking off. Exact pins are distinguished
-from ranges, missing versions, links, conflicting pins, and unsupported references.
-
-Enable **Check pinned dependencies with OSV** for the separate opt-in advisory lookup.
-Only ecosystems, names, and versions are sent; no new API key is needed. The API field is
-`dependency_lookup=true` on `/api/scan` (default false). OSV queries reuse caching,
-persistent pacing, cooldowns, and partial/stale results. Each scan schedules at most
-10 requests within a 30-second budget, at one request per second; complete cached
-queries do not consume this budget.
-
-Results and exports show manifest locations, versions, OSV records, affected ranges,
-and reported fixed boundaries. An OSV-reported match is not proof of installation or
-exploitability, and fixed boundaries are not automatically selected upgrades.
-See [dependency details and fixture steps](docs/DEPENDENCY_SCANNING.md) for supported
-formats, privacy, limits, pagination, and uncertainty handling.
-
-## Optional local AI with Ollama
-
-The **Explain findings with Ollama** checkbox asks a local model to explain existing
-rule findings and suggest defensive fixes. It is off by default. AI does not add,
-remove, validate, or change the severity of rule findings. There is no fine-tuning,
-training-data collection, or measured AI accuracy in this integration.
-
-Install [Ollama](https://ollama.com/download), then run:
+Desktop previews handle first-time AI setup. For a source checkout, install [Ollama](https://ollama.com/download), then download the model:
 
 ```bash
 ollama pull qwen2.5-coder:3b
-ollama serve
 ```
 
-If the Ollama desktop app is already serving, do not start a second server.
-The default is the [Qwen 2.5 Coder 3B model](https://ollama.com/library/qwen2.5-coder:3b).
-To use another installed local model, set `OLLAMA_MODEL` in `.env` and restart:
+Keep Ollama running. If it is not already serving, start it with `ollama serve`. In EvidenceGuard, click **Check local AI**, then enable **Explain findings with Ollama** for a scan.
 
-```bash
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload --env-file .env
-```
+The current model is **base Qwen 2.5 Coder 3B**. It explains existing rule findings; it does not independently detect new vulnerabilities, confirm exploitability, or apply repairs. The model name for source setup can be changed with `OLLAMA_MODEL`; see [AI configuration and boundaries](docs/TECHNICAL_REFERENCE.md#optional-local-ai-with-ollama).
 
-Open <http://127.0.0.1:8001>, upload a source example, select **Explain findings with
-Ollama**, and scan. Results have a separate **AI explanations** section. Both JSON
-and readable exports include a run ID, AI output, status, model tag, UTC timestamp, prompt
-version, input SHA256, and file/line/rule references. Model tags are not immutable
-model hashes. Reports remain in browser memory until downloaded; the application
-does not automatically persist uploaded-source AI history or training records.
-The separate [development evaluator](docs/AI_EVALUATION.md) can save runs on the
-repository synthetic corpus, pair them with rule results, and preserve human
-review scores and rationale without performing any training.
-The [CSC 733 AI training plan](docs/AI_TRAINING_PLAN.md) describes a proposed small
-LoRA pilot, reviewed data, overfitting controls, and later detection/patch capabilities.
-Training has not started and does not happen during scans.
-The [SQL pilot workflow](training/README.md) includes draft examples and commands
-to validate, preview, and prepare reviewed data without training or downloading weights.
+## Training roadmap
 
-The client uses Ollama's [chat API](https://docs.ollama.com/api/chat) at the fixed
-`http://127.0.0.1:11434/api/chat` address, ignores proxy settings, and refuses redirects.
-Use a downloaded local model and configure Ollama without cloud inference if source
-must remain on the machine. Only the first five findings (in severity/file/line
-order) are explained per scan. Each input includes the rule description,
-recommendation, line, CWE, and at most 300 characters of evidence. Credential-rule
-excerpts are withheld; other snippets may still contain sensitive values. Full files
-and dependency manifests are not supplied to the model.
+Fine-tuning is in preparation. **No project-trained model has been released.** The first pilot covers SQL explanations and defensive fixes, followed by command injection, unsafe deserialization, eval/exec, XSS, and credential handling. Each topic needs vulnerable, safe, and insufficient-context examples.
 
-One generation is allowed at a time, with a 60-second socket timeout, bounded token
-and response sizes, and no automatic retries. Missing models, unavailable Ollama,
-busy generation, truncated output, or invalid JSON produce a visible warning while
-preserving rule results. A clean rule scan makes no model request. Prompt instructions
-ask the model to treat source as untrusted, but model advice can still be manipulated
-or incorrect; all generated text is rendered as plain text and requires human review.
+The [training plan](docs/AI_TRAINING_PLAN.md) covers small LoRA experiments, reviewed data, and overfitting controls. The [pilot workflow](training/README.md) records current readiness and commands. Independent AI detection and validated patch generation remain later stages.
 
-Use **Check local AI** to check Ollama/model availability without sending source
-or starting generation. An installed model can still fail at generation time.
+---
 
-## Test
+## Developer checks
 
 ```bash
 python -m unittest discover -s tests -v
+python -m app.evaluate --output-dir .cache/evaluation
 ```
 
-Optional frontend checks require Node.js (the application itself does not need Node):
+Frontend checks require Node.js:
 
 ```bash
 node tests/frontend/ui-utils.test.mjs
@@ -159,47 +136,16 @@ node tests/frontend/ai-ui.test.mjs
 node --check app/static/app.js
 ```
 
-These checks cover file selection limits and readable report content. Visual layout, keyboard interactions, and browser download behavior still need a manual browser walkthrough.
+The [65 synthetic evaluation cases](evaluation/README.md) still await independent label review. Fixture scores are not real-world accuracy estimates. Browser checks remain tracked separately in [BROWSER_QA.md](docs/BROWSER_QA.md).
 
-## Rule evaluation
+## Documentation
 
-Run the reviewed synthetic corpus without executing its code or calling any services:
-
-```bash
-python -m app.evaluate --output-dir evaluation/results
-```
-
-[Evaluation notes](evaluation/README.md) describe 65 agent-reviewed synthetic cases across ten rules.
-The [current report](evaluation/results/report.md) records every expected/actual rule set, module
-hashes, and parser versions. The original [regex baseline](evaluation/baseline/report.md) and
-[pre-SQL report](evaluation/pre-sql/report.md) are preserved. SQL detection expands the catalog;
-the SQL diagnostic now expects the new rule instead of treating that weakness as unsupported.
-All 65 labels are explicitly awaiting [independent review](evaluation/INDEPENDENT_REVIEW.md).
-Passing these cases does not estimate real-world accuracy or model explanation quality.
-
-## How it works
-
-1. The browser uploads selected files (or files from a selected folder) to the local FastAPI server.
-2. The server reads supported files into memory. Python rules inspect the syntax tree; JavaScript-family rules inspect Tree-sitter syntax trees for JS, JSX, TS, and TSX. Other supported languages retain the credential regex heuristic.
-3. The UI displays matching lines and rule-based remediation examples.
-4. If online lookup is selected, up to three unique CVE IDs mentioned in source are sent to CVE.org and NVD. These references appear separately from heuristic findings. Without CVE mentions, no online request is made.
-
-The UI escapes all returned text before displaying it. The scanner does not execute submitted code.
-
-Python analysis uses the standard-library AST to identify actual calls, literal credential assignments, direct import aliases, and explicit YAML loader arguments across lines. It accounts for common lexical name shadowing, with sequential top-level assignment/import handling and match-pattern bindings. It does not fully resolve arbitrary reassignment aliases, conditional imports, wrappers, or dynamic imports. Conventional names such as `yaml`, `pickle`, and `eval` are assumed when snippets omit imports. Ambiguous/rebound names can be missed. Syntax that cannot be fully parsed uses a best-effort token-based fallback; a per-file warning appears in the UI and both report formats so partial analysis is visible. Python syntax support follows the Python version running the scanner.
-
-JavaScript, JSX, TypeScript, and TSX now use [Tree-sitter](https://github.com/tree-sitter/py-tree-sitter) with the official [JavaScript](https://github.com/tree-sitter/tree-sitter-javascript) and [TypeScript/TSX](https://github.com/tree-sitter/tree-sitter-typescript) grammars. Syntax nodes distinguish calls from JSX text, strings, and regex literals, including statement-position regex ambiguity. The rules handle common lexical shadowing, constant computed DOM properties, template expressions, and type assertions. Parsing a complete syntax tree does not provide complete semantic or taint analysis: dynamic properties, assignment aliases, cross-file bindings, and unusual TypeScript constructs can still be missed. Syntax errors yield a visible parser-recovery warning. Other languages retain the line-based credential heuristic. Evidence snippets may span multiple lines, up to 300 characters.
-
-The Python **PY-SQL-INJECTION / CWE-89** rule follows local query variables through direct assignments, aliases, simple branches/loops, and overwrites into `.execute()`, `.executemany()`, and `.executescript()` calls. It flags known SQL fragments combined with unknown values using f-strings, concatenation, `%`, or `.format()`. Static queries with separately bound values are not flagged; passing parameters alongside an already-interpolated query does not suppress the finding. This is a candidate construction heuristic, not proof that a value is attacker-controlled. It does not follow query values across function calls, ORM/custom builder APIs, heap attributes, or arbitrary dynamic SQL without a recognizable SQL fragment. Placeholder syntax depends on the database driver; the example fix uses sqlite3 `?` placeholders. See the [Python sqlite3 parameter binding documentation](https://docs.python.org/3/library/sqlite3.html#how-to-use-placeholders-to-bind-values-in-sql-queries).
-
-Use the sidebar to move between **Scan source**, **Scan results**, and **CVE database**. A completed scan opens its results automatically. Results include a file list with skip reasons, severity filtering, named CWE categories, and separate unverified CVE references. **Download JSON** exports the full result; **Download report** exports a readable `.txt` file, including provenance and provider warnings. Exports include flagged source snippets and remain local until you choose to share them. Selecting new files clears the previous report; results are kept only in the page's memory and are lost when it reloads.
-
-The browser reads limits and supported extensions from `GET /api/config`, and the server independently enforces limits. Unsupported files and files above the per-file limit are listed as skipped before upload. Too many supported files or an oversized batch blocks scanning until you select fewer files. Binary or invalid UTF-8 content detected on the server is listed with skip reasons. An entirely unsupported/binary/invalid-encoding upload returns a readable error with per-file reasons. UTF-8 BOMs are accepted. Browser-based responsive and keyboard checks remain pending in [BROWSER_QA.md](docs/BROWSER_QA.md).
-
-## Research inspiration
-
-- [VulnLLM-R](https://github.com/ucsb-mlsec/VulnLLM-R) studies reasoning-based detection and project-level analysis. This MVP starts with transparent, inspectable rules instead of claiming the accuracy of a trained model.
-- [PatchLM](https://github.com/SmartSecLab/PatchLM) studies model-generated security fixes. This MVP offers rule-based mitigation guidance; it does not automatically rewrite code.
-- [CyberGym](https://www.cybergym.io/cybergym/) and [CyberGym-E2E](https://rdi.berkeley.edu/blog/cybergym-e2e/) emphasize evaluation and validating candidate fixes. A future version should add a labeled test set and run checks against patched code.
-- Project repository: [Vulnerability-AI-Scanner](https://github.com/Hussein-Sbeiti/Vulnerability-AI-Scanner).
-
+| Guide | Use it for |
+| --- | --- |
+| [Source setup](docs/SETUP.md) | Linux, macOS, Windows, and optional environment settings |
+| [Desktop distribution](docs/DESKTOP_DISTRIBUTION.md) | Native downloads, first-run setup, builds, and platform limitations |
+| [Technical reference](docs/TECHNICAL_REFERENCE.md) | Analysis behavior, local AI boundaries, advisory providers, and research references |
+| [Dependency scanning](docs/DEPENDENCY_SCANNING.md) | Supported manifests, OSV checks, and uncertainty handling |
+| [Training plan](docs/AI_TRAINING_PLAN.md) | Scope, data, lightweight fine-tuning, and evaluation |
+| [Training pilot](training/README.md) | Tokenizer preflight, review workflow, and the local AMD target |
+| [Project backlog](TODO.md) | Completed work and next steps |

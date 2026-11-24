@@ -1,0 +1,8 @@
+EvidenceGuard README logo
+Tool: built-in image_gen (not the CLI fallback)
+Selected file: assets/branding/evidenceguard-logo.png
+Selected concept: third generated logo, approved by the user.
+Appearance: blue shield with white code brackets and checkmark on a dark background.
+
+Final generation prompt:
+Use case: logo-brand. Create a single clean professional logo icon for EvidenceGuard, a local code security scanner. A bold cobalt-blue geometric shield incorporates two crisp white code brackets and a white verification check. Render the symbol as perfectly flat opaque 2D shapes with smooth edges, entirely uniform solid fills, strong silhouette and simple negative space. Center the icon on a solid opaque dark slate square tile (#161b22), like a polished open-source project icon for a GitHub README. Fill the whole image background with the same dark slate; keep a modest even margin around the large mark. No transparency anywhere. No texture or distressing, no grain or speckles, no gradients, no glow, no 3D, no shadow, no wordmark, no letters, no extra decorations or watermark. The logo must be readable at 64px.
