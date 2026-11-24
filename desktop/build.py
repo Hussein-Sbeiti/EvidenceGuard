@@ -28,19 +28,23 @@ def main():
     else:
         bundle = dist / 'VulnAI-Scanner'
         executable = bundle / ('VulnAI-Scanner.exe' if system == 'windows' else 'VulnAI-Scanner')
-    subprocess.run([str(executable), '--self-test'], cwd=build, check=True)
+    subprocess.run([str(executable), '--self-test'], cwd=build, check=True, timeout=60)
     versions = sorted(({'name': d.metadata['Name'], 'version': d.version}
                        for d in importlib.metadata.distributions()), key=lambda d: d['name'].lower())
     metadata = {'platform': system, 'architecture': arch, 'packages': versions,
                 'release': json.loads((ROOT / 'desktop' / 'release.json').read_text()),
                 'verification': 'Frozen resource/parser self-test passed; full first-run and browser QA still required.'}
-    notes = bundle / ('Contents' if system == 'darwin' else '') / 'build-info.json'
+    commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True, check=True)
+    dirty = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, capture_output=True, text=True, check=True)
+    metadata.update(source_commit=commit.stdout.strip(), source_tree_dirty=bool(dirty.stdout.strip()))
+    notes = bundle / ('Contents/Resources' if system == 'darwin' else '') / 'build-info.json'
     notes.write_text(json.dumps(metadata, indent=2) + '\n')
     if system == 'darwin':
         # Re-sign after adding build metadata. This is ad-hoc signing for previews,
         # not Developer ID signing or Apple notarization.
         subprocess.run(['codesign', '--force', '--deep', '--sign', '-', str(bundle)], check=True)
-        subprocess.run([str(executable), '--self-test'], cwd=build, check=True)
+        subprocess.run(['codesign', '--verify', '--deep', '--strict', '--verbose=2', str(bundle)], check=True)
+        subprocess.run([str(executable), '--self-test'], cwd=build, check=True, timeout=60)
     # Explicit PyInstaller inputs exclude .env, uploads, training data, caches, and weights.
     for path in bundle.rglob('*'):
         if path.name == '.env' or path.name in {'sql_pilot.json', 'training', '.venv'}:

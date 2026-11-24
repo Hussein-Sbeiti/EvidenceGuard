@@ -48,7 +48,7 @@ artifact was built on glibc 2.43/Python 3.14.4 and is a development-host preview
 not a compatibility claim for older distributions. The workflow uses Ubuntu 22.04
 for the Linux release candidate and Python 3.12 on each target runner.
 
-On November 23, 2026, **170 backend tests and 13 frontend tests passed**. The frozen
+On November 23, 2026, **179 backend tests and 13 frontend tests passed**. The frozen
 Linux executable also passed a live test from a temporary working/data directory:
 loopback startup, setup page, website assets, a source scan, and graceful quit.
 The real pinned Linux runtime archive was downloaded, checksum-verified, and
@@ -113,7 +113,55 @@ The manual **Build desktop previews** workflow in
 Linux, Windows, Apple Silicon, and Intel Mac artifacts using the
 [documented GitHub runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 After the code is pushed, run it from GitHub's Actions tab, inspect all checks,
-and download the artifacts. It does not automatically publish them as a release.
+and download the artifacts. This general workflow does not publish them as a release.
+
+## Build and release Mac packages now
+
+The dedicated [Mac-only workflow](../.github/workflows/macos-preview.yml) builds
+Apple Silicon on `macos-15` and Intel on `macos-15-intel`. It does not run Windows
+or repeat the Linux build. Both variants contain a `.app`, declare macOS 14 as
+their minimum version, and use the existing automatic runtime/model setup.
+The minimum follows [Ollama's macOS requirements](https://docs.ollama.com/macos);
+actual first-run testing on macOS 14 remains pending. Intel inference uses CPU;
+Apple Silicon supports CPU/GPU through Ollama.
+
+After pushing the new workflow to `main`, build both architectures and attach
+their downloads to the existing preview release:
+
+```bash
+gh workflow run macos-preview.yml --ref main -f release_tag=v0.1.0-preview
+```
+
+To build downloadable Actions artifacts without publishing release assets:
+
+```bash
+gh workflow run macos-preview.yml --ref main
+```
+
+The publishing option waits for both native jobs to pass backend tests, frozen
+resource checks, strict ad-hoc code-signature verification, and live local
+server/scan/quit checks. It then verifies both archive checksums, architecture,
+release version, and clean source commit before uploading these four assets:
+
+- `VulnAI-Scanner-darwin-arm64.zip` and its `.sha256` file for Apple Silicon.
+- `VulnAI-Scanner-darwin-x86_64.zip` and its `.sha256` file for Intel Macs.
+
+Only the publish job receives permission to write release assets, and only when
+an existing release tag is explicitly supplied. Existing Linux files, release
+notes, and tags are preserved. Existing Mac assets cause a visible failure;
+the workflow does not overwrite them. If using a new release version, update
+`desktop/release.json` and create that release before publishing to it.
+
+Mac build metadata is stored in `Contents/Resources/build-info.json` before
+the app is re-signed and verified. Packages retain symlinks using `ditto`.
+Nine local tests cover checksum/provenance validation and guarded release uploads;
+the native Mac workflow has not been run from this Linux workspace.
+
+These are ad-hoc signed preview apps, not Apple-notarized public releases.
+Developer ID signing, notarization, a Finder launch, and a clean-machine
+runtime/model download still need validation before calling the Mac release
+ready for general users. The workflow's command-line checks do not replace
+that browser and operating-system walkthrough.
 
 ## Select the eventual trained model
 

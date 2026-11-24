@@ -1,6 +1,6 @@
 # Project To-do List
 
-Latest recorded verification: **170 backend tests and 13 frontend tests pass** (November 23, 2026; backend tests outside the sandbox). The frozen Linux desktop preview passed live server, resource, scan, and quit checks. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
+Latest recorded verification: **179 backend tests and 13 frontend tests pass** (November 23, 2026; backend tests outside the sandbox). The frozen Linux desktop preview passed live server, resource, scan, and quit checks. Mac upload validation has nine local tests; native Mac execution is pending. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
 
 Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Optional Ollama explanations are now integrated at user request; remaining non-AI review work is still open.
 
@@ -45,6 +45,8 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 - [x] Add automatic checksum-verified Ollama runtime acquisition, local model pulling, release model digest checks, and offline reuse.
 - [x] Build a Linux preview and verify frozen resources and live startup/scan/quit; verify real Linux runtime archive download and extraction.
 - [x] Configure manual native package builds for Linux, Windows, Apple Silicon, and Intel Macs; do not publish automatically.
+- [x] Add a Mac-only build workflow with optional upload to an explicitly selected existing release after both native jobs pass; validate architecture, checksums, release version, and clean source provenance without overwriting Linux assets.
+- [x] Set Mac bundle version/minimum OS metadata, place build information in Resources, and add strict ad-hoc signature verification; native CI execution remains pending.
 - [ ] Run Windows/macOS native builds, browser walkthroughs, and clean-machine first-run/offline/upgrade tests; Linux distribution compatibility also needs release-candidate checks.
 - [ ] Add Windows code signing and Apple Developer ID signing/notarization, then publish tested desktop downloads.
 - [ ] Publish a validated trained inference model and pin it in desktop/release.json; current desktop model is base Qwen, not a fine-tune.

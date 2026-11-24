@@ -1,0 +1,73 @@
+name: Build macOS previews
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release to attach both Mac downloads to; leave empty to build artifacts only'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm native build architecture
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: python -c "import os, platform; assert platform.machine() == os.environ['TARGET_ARCH'], platform.machine()"
+      - name: Install scanner and build dependencies
+        run: python -m pip install -r requirements.txt -r desktop/requirements.txt
+      - name: Run backend checks
+        run: python -m unittest discover -s tests -q
+      - name: Build and verify Mac app and signature
+        run: python desktop/build.py
+      - name: Check frozen server and scanner
+        run: python desktop/smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-preview-${{ matrix.arch }}
+          path: .cache/desktop-artifacts/VulnAI-Scanner-darwin-${{ matrix.arch }}.zip*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Attach Mac downloads to existing release
+    needs: build
+    if: ${{ inputs.release_tag != '' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macos-preview-*
+          merge-multiple: true
+          path: .cache/macos-release
+      - name: Verify and upload both architectures and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: python desktop/publish_macos.py --directory .cache/macos-release --tag "$RELEASE_TAG" --repo "$GH_REPO"

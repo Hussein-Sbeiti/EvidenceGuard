@@ -1,5 +1,6 @@
 # Build on each target OS; PyInstaller is not a cross compiler.
 from pathlib import Path
+import json
 import sys
 from PyInstaller.utils.hooks import collect_all
 
@@ -23,4 +24,9 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='VulnAI-Scanner',
           debug=False, strip=False, upx=False, console=sys.platform.startswith('linux'))
 collection = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='VulnAI-Scanner')
 if sys.platform == 'darwin':
-    app = BUNDLE(collection, name='VulnAI-Scanner.app', bundle_identifier='edu.csc733.vulnaiscanner')
+    release = json.loads((root / 'desktop' / 'release.json').read_text())
+    version = release['app_version'].split('-', 1)[0]
+    app = BUNDLE(collection, name='VulnAI-Scanner.app', bundle_identifier='edu.csc733.vulnaiscanner',
+                 version=version, info_plist={'CFBundleDisplayName': 'Vulnerability AI Scanner',
+                                             'CFBundleVersion': version,
+                                             'LSMinimumSystemVersion': '14.0'})
