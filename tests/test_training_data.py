@@ -1,13 +1,16 @@
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from app.ai import LocalAI
 from app.training_data import (DEFAULT_DATASET, describe, doctor, explanation_example,
-                               fingerprint, prepare, record_digest, sha256, split_for, validate_dataset)
+                               fingerprint, prepare, record_digest, sha256, split_for, validate_dataset,
+                               apply_reviews, review_packet)
 
 
 class TrainingDataTests(unittest.TestCase):
@@ -164,6 +167,110 @@ class TrainingDataTests(unittest.TestCase):
         self.assertFalse(result['training_performed'])
         self.assertIn('torch', result['packages_in_this_interpreter'])
         self.assertIn('/dev/kfd', result['device_nodes_visible'])
+
+    def test_identical_bounded_prompts_cannot_cross_splits(self):
+        self.approve()
+        example = explanation_example(self.data['records'][0])
+        with patch('app.training_data.explanation_example', return_value=example):
+            with self.assertRaisesRegex(ValueError, 'Identical bounded prompts'):
+                prepare(self.save(), self.root / 'bad-export')
+        self.assertFalse((self.root / 'bad-export').exists())
+
+    def packet(self):
+        path = self.root / 'packet.json'
+        review_packet(self.save(), path)
+        return path, json.loads(path.read_text())
+
+    def test_review_packet_includes_full_record_hash_target_and_diagnostics_without_approving(self):
+        path, packet = self.packet()
+        self.assertEqual(len(packet['records']), 18)
+        item = packet['records'][0]
+        self.assertEqual(item['record_sha256'], record_digest(self.data['records'][0]))
+        self.assertEqual(item['bounded_example'], explanation_example(self.data['records'][0]))
+        self.assertEqual(item['decisions']['review']['status'], 'pending')
+        self.assertIn('scanner_observation', item)
+        self.assertEqual(json.loads(self.path.read_text()), self.data)
+        if os.name != 'nt':
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            review_packet(self.path, path)
+
+    def decision(self):
+        return {'status': 'approved', 'reviewer': 'worksheet-test-reviewer', 'date': '2026-11-23',
+                'rationale': 'Synthetic test review; not a real approval.'}
+
+    def test_completed_worksheet_import_preserves_original_and_binds_new_dataset_approvals(self):
+        path, packet = self.packet()
+        for item in packet['records']:
+            item['decisions'] = {kind: self.decision() for kind in ('review', 'screening')}
+        path.write_text(json.dumps(packet))
+        output = self.root / 'reviewed.json'
+        original = self.path.read_bytes()
+        result = apply_reviews(self.path, path, output, 'reviewed-test-1')
+        self.assertEqual(result['decisions_imported'], 36)
+        self.assertEqual(self.path.read_bytes(), original)
+        data = validate_dataset(output)
+        self.assertEqual(data['version'], 'reviewed-test-1')
+        self.assertTrue(all(r['review']['status'] == 'approved' for r in data['records']))
+        prepare(output, self.root / 'reviewed-export')
+        with self.assertRaises(FileExistsError):
+            apply_reviews(self.path, path, output, 'reviewed-test-1')
+
+    def test_empty_worksheet_does_not_create_an_approved_dataset(self):
+        path, _ = self.packet()
+        output = self.root / 'not-reviewed.json'
+        with self.assertRaisesRegex(ValueError, 'No completed'):
+            apply_reviews(self.path, path, output, 'reviewed-test-1')
+        self.assertFalse(output.exists())
+
+    def test_partial_review_remains_untrainable(self):
+        path, packet = self.packet()
+        packet['records'][0]['decisions']['review'] = self.decision()
+        path.write_text(json.dumps(packet))
+        output = self.root / 'partial.json'
+        apply_reviews(self.path, path, output, 'partial-test-1')
+        self.assertEqual(describe(validate_dataset(output))['review_statuses'], {'approved': 1, 'pending': 17})
+        with self.assertRaisesRegex(ValueError, 'All records'):
+            prepare(output, self.root / 'partial-export')
+
+    def test_changed_dataset_cannot_receive_old_worksheet_decisions(self):
+        path, _ = self.packet()
+        self.data['records'][0]['rationale'] += ' Revised.'
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'stale'):
+            apply_reviews(self.path, path, self.root / 'bad.json', 'reviewed-test-1')
+
+    def test_modified_worksheet_source_or_prompt_is_rejected(self):
+        path, packet = self.packet()
+        original = copy.deepcopy(packet)
+        for field in ('record', 'bounded_example'):
+            with self.subTest(field=field):
+                packet = copy.deepcopy(original)
+                if field == 'record':
+                    packet['records'][0]['record']['rationale'] = 'Changed in worksheet.'
+                else:
+                    packet['records'][0]['bounded_example']['completion'][0]['content'] = '{}'
+                path.write_text(json.dumps(packet))
+                with self.assertRaisesRegex(ValueError, 'changed'):
+                    apply_reviews(self.path, path, self.root / 'bad.json', 'reviewed-test-1')
+
+    def test_worksheet_cannot_self_approve_or_omit_decision_metadata(self):
+        path, packet = self.packet()
+        original = copy.deepcopy(packet)
+        for field, value in (('reviewer', 'codex-author'), ('rationale', ''), ('date', 'not-a-date')):
+            with self.subTest(field=field):
+                packet = copy.deepcopy(original)
+                packet['records'][0]['decisions']['review'] = {**self.decision(), field: value}
+                path.write_text(json.dumps(packet))
+                with self.assertRaises(ValueError):
+                    apply_reviews(self.path, path, self.root / 'bad.json', 'reviewed-test-1')
+
+    def test_duplicate_worksheet_records_are_rejected(self):
+        path, packet = self.packet()
+        packet['records'][1] = packet['records'][0]
+        path.write_text(json.dumps(packet))
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            apply_reviews(self.path, path, self.root / 'bad.json', 'reviewed-test-1')
 
 
 if __name__ == '__main__':

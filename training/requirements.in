@@ -1,0 +1,8 @@
+# Candidate application dependencies, not a tested hardware-specific lockfile.
+# Install a PyTorch wheel supported by the host GPU/OS/Python FIRST.
+# In the separate training environment, also install ../requirements.txt.
+transformers>=4.46,<6
+peft>=0.14,<1
+accelerate>=1,<2
+huggingface-hub>=0.34,<2
+# Optional CUDA-only QLoRA path: install a compatible bitsandbytes separately.

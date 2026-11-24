@@ -1,6 +1,6 @@
 # Project To-do List
 
-Latest recorded verification: **130 backend tests pass** (November 23, 2026); **13 frontend tests passed in the earlier verification**. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
+Latest recorded verification: **170 backend tests and 13 frontend tests pass** (November 23, 2026; backend tests outside the sandbox). The frozen Linux desktop preview passed live server, resource, scan, and quit checks. The expanded evaluation matches all **65 agent-reviewed labels**; independent sign-off is still pending. Fixture results do not establish real-world accuracy.
 
 Dependency manifest inventory and opt-in OSV checks are implemented. Remaining work includes additional manifest formats and independent applicability/upgrade review. Browser verification and independent label review can proceed separately. Optional Ollama explanations are now integrated at user request; remaining non-AI review work is still open.
 
@@ -41,6 +41,13 @@ Dependency manifest inventory and opt-in OSV checks are implemented. Remaining w
 
 ## Project delivery
 
+- [x] Add a native desktop launcher with per-user storage, single-instance behavior, browser startup, setup progress/retry, and app shutdown.
+- [x] Add automatic checksum-verified Ollama runtime acquisition, local model pulling, release model digest checks, and offline reuse.
+- [x] Build a Linux preview and verify frozen resources and live startup/scan/quit; verify real Linux runtime archive download and extraction.
+- [x] Configure manual native package builds for Linux, Windows, Apple Silicon, and Intel Macs; do not publish automatically.
+- [ ] Run Windows/macOS native builds, browser walkthroughs, and clean-machine first-run/offline/upgrade tests; Linux distribution compatibility also needs release-candidate checks.
+- [ ] Add Windows code signing and Apple Developer ID signing/notarization, then publish tested desktop downloads.
+- [ ] Publish a validated trained inference model and pin it in desktop/release.json; current desktop model is base Qwen, not a fine-tune.
 - [x] Document setup and run instructions for Windows, macOS, and Linux in docs/SETUP.md (execution verified on Linux; other platform walkthroughs pending).
 - [x] Add clearly labeled vulnerable examples and a safe comparison for repeatable scans.
 - [x] Test example uploads through the running website's HTTP endpoints and verify CVE.org, NVD, and Exploit-DB results; document results and limitations in examples/TEST_RESULTS.md.
@@ -53,8 +60,12 @@ The current goal is gradual, lightweight specialization of Qwen 2.5 Coder 3B for
 
 - [x] Research a staged LoRA/QLoRA approach, context limits, data separation, and overfitting controls for CSC 733.
 - [ ] Verify the AMD GPU training backend and memory with a one-batch smoke test; isolate and pin training dependencies.
-- [x] Define approved-record validation and stable family-based train/validation/test manifests without reusing development fixtures for training; CLI and 15 regression tests implemented in app/training_data.py and tests/test_training_data.py.
+- [x] Define approved-record validation and stable family-based train/validation/test manifests without reusing development fixtures for training; CLI and 24 regression tests implemented in app/training_data.py and tests/test_training_data.py.
 - [x] Author an initial draft of 18 SQL examples in 10 families, with provenance, source hashes, proposed fixes, bounded explanation targets, and pending review/screening; see training/README.md.
+- [x] Implement an opt-in local LoRA runner with readiness checks, export validation, completion-token masking, length checks, one-step smoke mode, one-epoch limits, and local run metadata. Real GPU/model execution is pending; runner orchestration is tested with mocks.
+- [x] Revise draft SQL examples to expose construction in bounded excerpts and reject identical prompts across dataset splits.
+- [x] Install qwen2.5-coder:3b in local Ollama and verify a live explanation on development fixtures; no human quality score or weight updates.
+- [x] Add a source/fix/target review worksheet and guarded import of explicit review decisions into a new dataset version; generate the initial local worksheet without approving draft records.
 - [ ] Curate 20–30 reviewed Python SQL-injection example families for a pilot, including safe and insufficient-context cases.
 - [ ] Train and compare a small explanation adapter against the unchanged base; retain validation results and rollback artifacts.
 - [ ] Implement and evaluate independent AI detection on bounded code context, including clean code, before claiming AI detection metrics.

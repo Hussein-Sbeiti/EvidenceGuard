@@ -10,9 +10,14 @@ This is the proposed development plan as of November 23, 2026. No training has r
 no approved training dataset exists yet, and the runtime remains explanation-only.
 The [SQL pilot workflow](../training/README.md) now includes 18 draft examples in
 10 families, validation, grouped split preparation, bounded prompt previews, and
-review gates. All draft records await review and data screening. Training libraries
-and GPU device access are unavailable in the inspected project execution environment;
-a training smoke test has not run.
+review gates. An opt-in `app.train_adapter` runner now provides readiness checks,
+dry runs, one-step smoke mode, and one-epoch LoRA mode using Transformers Trainer
+with explicit completion-only labels. This implements the proposed SFT approach
+without requiring TRL. Actual GPU/model execution remains unverified; all draft
+records await review and data screening. Training libraries are absent from the
+project environment. GPU nodes are hidden in the sandbox but visible in a host
+check; PyTorch/backend compatibility and a training smoke test remain pending.
+Qwen is now installed in Ollama and a live development explanation completed.
 
 ## What already exists
 
@@ -202,8 +207,9 @@ the app, convert/quantize with compatible tooling, and import the resulting GGUF
 conversion and quantization must happen beforehand. Reevaluate the served artifact
 because quantization can change its outputs. Keep the previous model for rollback.
 
-The next implementation batch should create a reviewed-record schema, a dataset
-validator, stable family-based split manifests, and a separately pinned training
-environment after the hardware smoke test. Then run the single-topic pilot and
-record the base-versus-adapter comparison. Broaden to shell commands and unsafe
+The record schema, validator, split manifests, and runner are implemented. The
+next batch needs independent record review, more varied families, a verified
+training backend, and resolved dependency versions. Run the one-step smoke test
+before the single-topic pilot and record the base-versus-adapter comparison.
+Broaden to shell commands and unsafe
 deserialization only after the first topic has measurable validation results.

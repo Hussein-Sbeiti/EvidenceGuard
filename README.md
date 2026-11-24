@@ -3,6 +3,8 @@
 A local web app for uploading source files or folders and checking a small, editable catalog of common risky coding patterns. Findings include a file path, line number, severity, CWE category, explanation, and suggested mitigation.
 
 See [TODO.md](TODO.md) for the project backlog.
+See [downloadable desktop previews](docs/DESKTOP_DISTRIBUTION.md) for the native
+launcher, automatic local AI setup, package builds, and remaining release checks.
 See [examples/README.md](examples/README.md) for educational fixtures and website test steps,
 and [examples/TEST_RESULTS.md](examples/TEST_RESULTS.md) for observed endpoint results.
 
@@ -201,23 +203,3 @@ The browser reads limits and supported extensions from `GET /api/config`, and th
 - [CyberGym](https://www.cybergym.io/cybergym/) and [CyberGym-E2E](https://rdi.berkeley.edu/blog/cybergym-e2e/) emphasize evaluation and validating candidate fixes. A future version should add a labeled test set and run checks against patched code.
 - Project repository: [Vulnerability-AI-Scanner](https://github.com/Hussein-Sbeiti/Vulnerability-AI-Scanner).
 
-## Suggested next steps
-
-1. Obtain independent review of the expanded corpus and complete browser responsive/keyboard checks.
-2. Extend manifest/lockfile support and independently validate version applicability and upgrade compatibility. Current OSV results remain source-reported matches.
-3. Add an optional local model (for example, through Ollama) to explain verified rule matches. Keep deterministic findings separate from model-generated suggestions and label model output as unverified.
-4. Evaluate proposed fixes with tests and human review; do not automatically apply model-generated patches.
-
-## Git setup and commit commands
-
-Review and push project changes from this repository:
-
-```bash
-git status
-git diff
-git add .gitignore .env.example README.md TODO.md requirements.txt app tests examples evaluation docs
-git commit -m "Improve scanner analysis and upload boundaries"
-git push origin main
-```
-
-The real `.env`, downloaded database, cache, and virtual environment are ignored by Git.

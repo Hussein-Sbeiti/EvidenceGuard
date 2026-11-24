@@ -1,0 +1,34 @@
+name: Build desktop previews
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install runtime and packaging dependencies
+        run: python -m pip install -r requirements.txt -r desktop/requirements.txt
+      - name: Run backend checks
+        run: python -m unittest discover -s tests -q
+      - name: Build and smoke-test native preview
+        run: python desktop/build.py
+      - name: Check frozen server and scanner
+        run: python desktop/smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-preview-${{ matrix.os }}
+          path: .cache/desktop-artifacts/*
+          if-no-files-found: error
+          retention-days: 14

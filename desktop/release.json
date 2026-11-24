@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "app_version": "0.1.0-preview",
+  "model": {
+    "name": "qwen2.5-coder:3b",
+    "digest": "f72c60cabf6237b07f6e632b2c48d533cef25eda2efbd34bed21c5e9c01e6225",
+    "trained": false
+  },
+  "runtime": {
+    "version": "v0.40.17",
+    "assets": {
+      "linux-x86_64": {
+        "name": "ollama-linux-amd64.tar.zst",
+        "bytes": 1545470208,
+        "sha256": "1df9d6228bac5a22e420b242708c0d10e5b886db97bab99d446a41760f4e79af"
+      },
+      "windows-x86_64": {
+        "name": "ollama-windows-amd64.zip",
+        "bytes": 1618522644,
+        "sha256": "3dd80f6e3a9699f2eadf4ac418f00529cee594df9557541806eda1f1f3f5588a"
+      },
+      "darwin-arm64": {
+        "name": "ollama-darwin.tgz",
+        "bytes": 187626746,
+        "sha256": "4b9db20d077c5a1e52fb4a6f2e6791f76ae945fd07c9b1a5647c82e927826653"
+      },
+      "darwin-x86_64": {
+        "name": "ollama-darwin.tgz",
+        "bytes": 187626746,
+        "sha256": "4b9db20d077c5a1e52fb4a6f2e6791f76ae945fd07c9b1a5647c82e927826653"
+      }
+    }
+  }
+}

@@ -1,5 +1,9 @@
 # Setup on Linux, macOS, and Windows
 
+For the downloadable app and automatic first-run setup, see
+[desktop distribution](DESKTOP_DISTRIBUTION.md). The commands below are for the
+source checkout; the native packages bundle Python and the scanner libraries.
+
 Run commands from the repository root. The scanner needs Python 3.10 or newer;
 Ollama and Node.js are optional. Node.js is used only for frontend tests.
 The instructions below are documented for all three systems; this project's

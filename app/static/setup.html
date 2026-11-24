@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local scanner setup</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111827; color: #e5e7eb; }
+    body { margin: 0; padding: 32px 20px; }
+    main { max-width: 640px; margin: 8vh auto; padding: 32px; background: #1f2937; border-radius: 16px; }
+    h1 { font-size: 1.8rem; } p { line-height: 1.6; } .muted { color: #b3bfd0; }
+    progress { width: 100%; height: 20px; accent-color: #60a5fa; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+    a, button { font: inherit; padding: 12px 18px; border-radius: 8px; border: 1px solid #64748b; color: #e5e7eb; background: #334155; cursor: pointer; text-decoration: none; }
+    a.primary { background: #1d4ed8; border-color: #3b82f6; }
+    :focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; } [hidden] { display: none !important; }
+  </style>
+</head>
+<body><main>
+  <p class="muted">Vulnerability AI Scanner · Local setup</p>
+  <h1>Your scanner runs on this computer</h1>
+  <p>The scanner is ready to open. First-time AI setup downloads the local runtime and model; it can take several minutes and several gigabytes. Future launches reuse them.</p>
+  <p id="model" class="muted"></p>
+  <div role="status" aria-live="polite"><p id="message">Checking setup…</p><progress id="progress" aria-label="Local AI download"></progress><p id="amount" class="muted"></p></div>
+  <div class="actions">
+    <a class="primary" href="/">Open scanner</a>
+    <button id="retry" type="button" hidden>Retry AI setup</button>
+    <button id="quit" type="button">Quit app</button>
+  </div>
+  <p class="muted">You can scan with rules while AI is being installed. After setup, code analysis and AI explanations work offline. Optional vulnerability database lookups need internet access.</p>
+  <p class="muted">Closing a browser tab does not stop the app. Keep this page to quit when you are done. Uploaded source stays in memory and is not saved by the scanner.</p>
+</main>
+<script>
+  const message = document.getElementById('message');
+  const progress = document.getElementById('progress');
+  const retry = document.getElementById('retry');
+  let stopped = false;
+  async function poll() {
+    if (stopped) return;
+    try {
+      const response = await fetch('/api/desktop/setup', {cache: 'no-store'});
+      if (!response.ok) throw new Error();
+      const state = await response.json();
+      if (state.status === 'ready' && !new URLSearchParams(location.search).has('controls')) {
+        location.replace('/');
+        return;
+      }
+      message.textContent = state.message;
+      document.getElementById('model').textContent = (state.trained_model ? 'Project model: ' : 'Base model (not fine-tuned): ') + state.model;
+      progress.hidden = state.status === 'ready' || state.status === 'error';
+      if (state.total > 0) { progress.max = state.total; progress.value = state.completed; }
+      else progress.removeAttribute('value');
+      document.getElementById('amount').textContent = state.total > 0 ? Math.round(state.completed / state.total * 100) + '% of the current download' : '';
+      retry.hidden = state.status !== 'error';
+    } catch { message.textContent = 'Cannot reach the app. Open it again if it has stopped.'; }
+    if (!stopped) setTimeout(poll, 1000);
+  }
+  retry.addEventListener('click', async () => {
+    retry.disabled = true;
+    try { await fetch('/api/desktop/setup', {method: 'POST', headers: {'X-Scanner-Desktop': '1'}}); }
+    finally { retry.disabled = false; }
+  });
+  document.getElementById('quit').addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/desktop/quit', {method: 'POST', headers: {'X-Scanner-Desktop': '1'}});
+      if (!response.ok) throw new Error();
+      stopped = true;
+      message.textContent = 'The app is stopping. You can close this tab.';
+      progress.hidden = true;
+    } catch { message.textContent = 'Could not stop the app. Try again.'; }
+  });
+  poll();
+</script></body></html>

@@ -33,8 +33,9 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class LocalAI:
-    def __init__(self, model=None, opener=None):
+    def __init__(self, model=None, opener=None, expected_digest=None):
         self.model = model if model is not None else os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:3b")
+        self.expected_digest = expected_digest
         # Fixed loopback destination; ignore proxy environment and reject redirects.
         self.opener = opener or build_opener(ProxyHandler({}), NoRedirect()).open
         self.lock = threading.Lock()
@@ -61,6 +62,8 @@ class LocalAI:
                         raise ValueError("Invalid digest")
                     result.update(status="ready", model_digest=digest,
                                   message="Local model is installed. Generation has not been tested by this check.")
+                    if self.expected_digest is not None and digest != self.expected_digest:
+                        result.update(status="model_mismatch", message="The installed model does not match this app release. Open app setup to review the model.")
                     return result
             result.update(status="model_missing", message="Ollama is running, but the configured model is not installed. Pull the configured model and retry.")
         except (URLError, OSError, ValueError, KeyError, TypeError, AttributeError) as error:
@@ -79,6 +82,9 @@ class LocalAI:
         result["run_id"] = str(uuid4())
         if not findings:
             result["status"] = "no_findings"
+            return result
+        if self.expected_digest is not None and self.status()['status'] != 'ready':
+            result.update(status='unavailable', warning='This app release requires its verified local model. Complete local AI setup before requesting explanations.')
             return result
         selected = findings[:MAX_AI_FINDINGS]
         result["omitted_findings"] = len(findings) - len(selected)

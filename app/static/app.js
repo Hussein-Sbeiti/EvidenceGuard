@@ -102,6 +102,8 @@ async function loadConfig() {
     const response = await fetch("/api/config");
     if (!response.ok) throw new Error("Unable to load scanner settings. Refresh the page to try again.");
     config = await response.json();
+    const desktopControls = $("#desktopControls");
+    if (desktopControls) desktopControls.hidden = !config.desktop;
     fileInput.accept = [...new Set([...config.supported_extensions, ...(config.manifest_filenames || []).map(name => name.slice(name.lastIndexOf(".")))])].join(",");
     $("#uploadLimits").textContent = `Up to ${config.limits.files} supported files · ${formatBytes(config.limits.file_bytes)} per file · ${formatBytes(config.limits.total_bytes)} total`;
     $("#lookupLimit").textContent = `Up to ${config.max_cve_lookups} CVE IDs per scan. Rate limits may defer results; affected versions still need review.`;

@@ -1,4 +1,4 @@
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
@@ -19,12 +19,49 @@ app.add_middleware(LocalOnlyMiddleware)
 local_ai = LocalAI()
 intelligence = Intelligence()
 dependency_intelligence = DependencyIntelligence(intelligence)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+STATIC_DIRECTORY = Path(__file__).resolve().parent / 'static'
+app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
-    return FileResponse("app/static/index.html")
+    return FileResponse(STATIC_DIRECTORY / 'index.html')
+
+
+def desktop_manager():
+    manager = getattr(app.state, 'desktop_setup', None)
+    if manager is None:
+        raise HTTPException(status_code=404, detail='Desktop setup is available in the desktop launcher.')
+    return manager
+
+
+@app.get('/setup', include_in_schema=False)
+async def desktop_setup_page():
+    desktop_manager()
+    return FileResponse(STATIC_DIRECTORY / 'setup.html')
+
+
+@app.get('/api/desktop/setup', include_in_schema=False)
+async def desktop_setup_status():
+    return desktop_manager().snapshot()
+
+
+@app.post('/api/desktop/setup', include_in_schema=False)
+async def desktop_setup_retry(request: Request):
+    manager = desktop_manager()
+    if request.headers.get('x-scanner-desktop') != '1':
+        raise HTTPException(status_code=403, detail='Use the local setup page.')
+    manager.start()
+    return manager.snapshot()
+
+
+@app.post('/api/desktop/quit', include_in_schema=False)
+async def desktop_quit(request: Request):
+    manager = desktop_manager()
+    if request.headers.get('x-scanner-desktop') != '1':
+        raise HTTPException(status_code=403, detail='Use the local setup page.')
+    manager.shutdown_callback()
+    return {'status': 'stopping'}
 
 
 @app.get("/api/health")
@@ -35,6 +72,7 @@ async def health() -> dict[str, str]:
 @app.get("/api/config")
 async def configuration() -> dict[str, object]:
     return {
+        "desktop": getattr(app.state, 'desktop_setup', None) is not None,
         "ai": local_ai.config(),
         "limits": {"files": MAX_FILES, "file_bytes": MAX_FILE_BYTES, "total_bytes": MAX_TOTAL_BYTES},
         "supported_extensions": sorted(SUPPORTED_EXTENSIONS),

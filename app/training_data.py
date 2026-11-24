@@ -6,10 +6,12 @@ Never executes snippets, trains a model, downloads weights, or ingests uploads.
 import argparse
 import ast
 from collections import Counter
+from copy import deepcopy
 from datetime import date
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -180,11 +182,18 @@ def prepare(path, output):
         raise ValueError('All records need approved independent label review and data screening before export.')
     splits = {key: [] for key in ('train', 'validation', 'test')}
     examples = {'train': [], 'validation': []}
+    prompt_splits = {}
     for record in sorted(data['records'], key=lambda r: r['id']):
         split = split_for(record['family'])
         splits[split].append(record['id'])
-        if record['label'] == 'vulnerable' and split != 'test':
-            examples[split].append(explanation_example(record))
+        if record['label'] == 'vulnerable':
+            example = explanation_example(record)
+            prompt_key = sha256(json.dumps(example['prompt'], sort_keys=True))
+            if prompt_key in prompt_splits and prompt_splits[prompt_key] != split:
+                raise ValueError('Identical bounded prompts cross dataset splits; revise context or group related records.')
+            prompt_splits[prompt_key] = split
+            if split != 'test':
+                examples[split].append(example)
     if any(not ids for ids in splits.values()) or any(not values for values in examples.values()):
         raise ValueError('Need nonempty family splits and vulnerable train/validation examples; collect more families.')
     # Complete validation before creating any files. Test answers are deliberately not exported.
@@ -218,6 +227,98 @@ def doctor():
             'notice': 'Inventory only, not a GPU compatibility or allocation test. No weights or packages downloaded.'}
 
 
+def write_json_new(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'x', encoding='utf-8', opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
+        json.dump(value, stream, indent=2)
+        stream.write('\n')
+
+
+def review_packet(path, output):
+    """Create a human review handoff; never infer or fill approval decisions."""
+    original = Path(path).read_bytes()
+    data = validate_dataset(path)
+    if Path(path).read_bytes() != original:
+        raise ValueError('Dataset changed during validation.')
+    packet = {'schema_version': 1, 'dataset_sha256': hashlib.sha256(original).hexdigest(),
+              'dataset_version': data['version'], 'records': [],
+              'notice': 'Human review worksheet, including held-out label review. Do not use test answers for tuning. '
+                        'Scanner flags are diagnostic observations, not ground truth. '
+                        'Fill decisions only after source, fix, bounded-target, and data screening checks.'}
+    for record in data['records']:
+        findings = scan_source('pilot.py', record['source'])
+        item = {'record': deepcopy(record), 'split': split_for(record['family']),
+                'record_sha256': record_digest(record),
+                'scanner_observation': [{'rule_id': f.rule_id, 'line': f.line} for f in findings],
+                'decisions': {kind: {'status': 'pending', 'reviewer': '', 'date': '', 'rationale': ''}
+                              for kind in ('review', 'screening')}}
+        if record['label'] == 'vulnerable':
+            item['bounded_example'] = explanation_example(record)
+        packet['records'].append(item)
+    write_json_new(output, packet)
+    return {'output': str(output), 'records': len(packet['records']), 'training_performed': False,
+            'notice': 'No dataset decisions were changed. A human must complete the worksheet.'}
+
+
+def apply_reviews(path, packet_path, output, version):
+    """Import explicit decisions against an exact dataset/record snapshot into a new file."""
+    original = Path(path).read_bytes()
+    data = validate_dataset(path)
+    packet = json.loads(Path(packet_path).read_text(encoding='utf-8'))
+    if Path(path).read_bytes() != original:
+        raise ValueError('Dataset changed during validation.')
+    if not nonempty(version) or version == data['version']:
+        raise ValueError('Provide a new, nonempty dataset version.')
+    if (not isinstance(packet, dict) or packet.get('schema_version') != 1
+            or packet.get('dataset_sha256') != hashlib.sha256(original).hexdigest()
+            or packet.get('dataset_version') != data['version']):
+        raise ValueError('Review packet is stale or belongs to another dataset.')
+    items = packet.get('records')
+    if not isinstance(items, list) or len(items) != len(data['records']):
+        raise ValueError('Review packet must contain each dataset record exactly once.')
+    by_id = {r['id']: r for r in data['records']}
+    seen, changed = set(), 0
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get('record'), dict):
+            raise ValueError('Invalid worksheet record.')
+        name = item['record'].get('id')
+        if name not in by_id or name in seen:
+            raise ValueError('Unknown or duplicate worksheet record.')
+        seen.add(name)
+        record = by_id[name]
+        if (item['record'] != record or item.get('record_sha256') != record_digest(record)
+                or item.get('split') != split_for(record['family'])):
+            raise ValueError('Worksheet source or annotations changed; correct the dataset and generate a new packet.')
+        if record['label'] == 'vulnerable' and item.get('bounded_example') != explanation_example(record):
+            raise ValueError('Worksheet bounded prompt/target changed; generate a new packet.')
+        decisions = item.get('decisions')
+        if not isinstance(decisions, dict) or set(decisions) != {'review', 'screening'}:
+            raise ValueError('Worksheet needs review and screening decisions.')
+        for kind, decision in decisions.items():
+            if not isinstance(decision, dict) or decision.get('status') not in {'pending', 'approved', 'rejected'}:
+                raise ValueError('Invalid review decision status.')
+            if decision['status'] == 'pending':
+                continue
+            if any(not nonempty(decision.get(key)) for key in ('reviewer', 'date', 'rationale')):
+                raise ValueError('Every decision needs reviewer, date, and rationale.')
+            try:
+                date.fromisoformat(decision['date'])
+            except ValueError as error:
+                raise ValueError('Decision dates must be YYYY-MM-DD.') from error
+            if kind == 'review' and decision['status'] == 'approved' and decision['reviewer'] == record['author']:
+                raise ValueError('Label approval needs a reviewer other than the author.')
+            record[kind] = {key: decision[key] for key in ('status', 'reviewer', 'date', 'rationale')}
+            record[kind]['record_sha256'] = record_digest(record)
+            changed += 1
+    if not changed:
+        raise ValueError('No completed review decisions; the draft dataset is unchanged.')
+    data['version'] = version
+    write_json_new(output, data)
+    return {'output': str(output), 'decisions_imported': changed, 'training_performed': False,
+            'notice': 'Original dataset preserved. Partial review is allowed, but training export requires all records approved.'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -227,6 +328,14 @@ def main():
     preview = commands.add_parser('preview', help='Show a draft bounded training prompt/target and approval hash; never export a batch.')
     preview.add_argument('--dataset', type=Path, default=DEFAULT_DATASET)
     preview.add_argument('--record', required=True)
+    worksheet = commands.add_parser('review-packet', help='Create a human worksheet with source, fixes, hashes, and bounded targets.')
+    worksheet.add_argument('--dataset', type=Path, default=DEFAULT_DATASET)
+    worksheet.add_argument('--output', type=Path, required=True)
+    reviews = commands.add_parser('apply-reviews', help='Import explicit human decisions into a new versioned dataset; never overwrite.')
+    reviews.add_argument('--dataset', type=Path, default=DEFAULT_DATASET)
+    reviews.add_argument('--packet', type=Path, required=True)
+    reviews.add_argument('--output', type=Path, required=True)
+    reviews.add_argument('--version', required=True)
     export = commands.add_parser('prepare', help='Export approved explanation data and grouped manifests; never train.')
     export.add_argument('--dataset', type=Path, default=DEFAULT_DATASET)
     export.add_argument('--output', type=Path, required=True, help='New local directory, usually under .cache/training/.')
@@ -243,6 +352,10 @@ def main():
                 raise ValueError('Preview needs an existing vulnerable record ID.')
             result = {'record_id': record['id'], 'record_sha256': record_digest(record),
                       'draft': True, 'example': explanation_example(record)}
+        elif args.command == 'review-packet':
+            result = review_packet(args.dataset, args.output)
+        elif args.command == 'apply-reviews':
+            result = apply_reviews(args.dataset, args.packet, args.output, args.version)
         else:
             result = prepare(args.dataset, args.output)
         print(json.dumps(result, indent=2))

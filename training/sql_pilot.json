@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "sql-pilot-draft-1",
+  "version": "sql-pilot-draft-2",
   "description": "Draft project-authored SQL examples. Independent label review and data screening pending. Never execute as a dataset.",
   "records": [
     {
@@ -9,12 +9,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def lookup_customer(cursor, customer):\n    query = f\"SELECT email FROM customers WHERE customer_name = '{customer}'\"\n    return cursor.execute(query).fetchone()\n",
-      "source_sha256": "2f35406f07c502fa408e4603e90405afd030c1b1047ba583915b04974372ead3",
+      "source": "def lookup_customer(cursor, customer):\n    return cursor.execute(f\"SELECT email FROM customers WHERE customer_name = '{customer}'\").fetchone()\n",
+      "source_sha256": "b5545408cadddc86b8b0884f7e6aa997c33d06d7fbd0a4352185b50f1fbd434f",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The formatted customer value becomes part of SQL syntax. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The formatted customer value becomes part of SQL syntax. If the value is untrusted, it may alter the query structure.",
       "remediation": "Use a SQLite ? placeholder for customer_name and pass (customer,) separately to execute.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -37,7 +37,7 @@
       },
       "fixed_source": "def lookup_customer(cursor, customer):\n    return cursor.execute(\"SELECT email FROM customers WHERE customer_name = ?\", (customer,)).fetchone()\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "Keep the query template fixed and bind lookup values using SQLite ? placeholders. Pass the values as the second execute argument; check the caller for input validation and authorization.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -79,12 +79,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def change_address(cursor, address, account_id):\n    query = \"UPDATE accounts SET postal_address = '\" + address + \"' WHERE account_id = ?\"\n    cursor.execute(query, (account_id,))\n",
-      "source_sha256": "5c1aee4b94ca73e30513efa64a69b2e5d3888528c19ff386c2d62314232ee4a5",
+      "source": "def change_address(cursor, address, account_id):\n    cursor.execute(\"UPDATE accounts SET postal_address = '\" + address + \"' WHERE account_id = ?\", (account_id,))\n",
+      "source_sha256": "d4f324b6c393ac156be9796dff42a291f03357e2ff33d02b5a561c62cd013475",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The address is concatenated into SQL even though account_id uses a placeholder. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The address is concatenated into SQL even though account_id uses a placeholder. If the value is untrusted, it may alter the query structure.",
       "remediation": "Bind both address and account_id: execute(\"UPDATE accounts SET postal_address = ? WHERE account_id = ?\", (address, account_id)).",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -107,7 +107,7 @@
       },
       "fixed_source": "def change_address(cursor, address, account_id):\n    cursor.execute(\"UPDATE accounts SET postal_address = ? WHERE account_id = ?\", (address, account_id))\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "For an UPDATE, bind every dynamic data value separately, including values in SET and WHERE clauses. Review the whole query because one bound value does not make other interpolated values safe.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -149,12 +149,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def remove_session(cursor, token):\n    query = \"DELETE FROM sessions WHERE session_token = '%s'\" % token\n    cursor.execute(query)\n",
-      "source_sha256": "ded8c4d2731882b4481cb0235ceecec29b7cf334a2a5d2a757aee37d77ac8780",
+      "source": "def remove_session(cursor, token):\n    cursor.execute(\"DELETE FROM sessions WHERE session_token = '%s'\" % token)\n",
+      "source_sha256": "517eacbf8ef06715df738da89bd1511183d4a8d5b887fd7d8bf0d7cc9dabdf6d",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. Python percent formatting inserts token text into the DELETE statement. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. Python percent formatting inserts token text into the DELETE statement. If the value is untrusted, it may alter the query structure.",
       "remediation": "Use execute(\"DELETE FROM sessions WHERE session_token = ?\", (token,)) so SQLite binds the value.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -177,7 +177,7 @@
       },
       "fixed_source": "def remove_session(cursor, token):\n    cursor.execute(\"DELETE FROM sessions WHERE session_token = ?\", (token,))\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "For a DELETE, use placeholders for dynamic WHERE values and pass their values separately. Verify the intended row selection and transaction behavior before adopting a change.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -219,12 +219,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def add_note(cursor, note):\n    query = \"INSERT INTO notes (body) VALUES ('{}')\".format(note)\n    cursor.execute(query)\n",
-      "source_sha256": "26a73653230c72894fcf9985b265fd3341661069589ce0e04ea2708c77e44671",
+      "source": "def add_note(cursor, note):\n    cursor.execute(\"INSERT INTO notes (body) VALUES ('{}')\".format(note))\n",
+      "source_sha256": "3a54e5905e04d00bf9e78bf000c3c0b0cc199ac075107cddbe1d41105286669b",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The format call inserts note text directly into the INSERT statement. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The format call inserts note text directly into the INSERT statement. If the value is untrusted, it may alter the query structure.",
       "remediation": "Use execute(\"INSERT INTO notes (body) VALUES (?)\", (note,)) rather than Python string formatting.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -247,7 +247,7 @@
       },
       "fixed_source": "def add_note(cursor, note):\n    cursor.execute(\"INSERT INTO notes (body) VALUES (?)\", (note,))\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "For an INSERT, keep table and column names fixed and bind the data values separately. Do not replace parameter binding with quoting or Python string formatting.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -289,12 +289,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def search_products(cursor, prefix):\n    query = f\"SELECT sku FROM products WHERE title LIKE '{prefix}%'\"\n    return cursor.execute(query).fetchall()\n",
-      "source_sha256": "4b7940af3c379582467ff99b563930d10d462003cf2417e1ba8db4487a501322",
+      "source": "def search_products(cursor, prefix):\n    return cursor.execute(f\"SELECT sku FROM products WHERE title LIKE '{prefix}%'\").fetchall()\n",
+      "source_sha256": "fc823b6bf0595a8f8cec828cf7d98a9b5d06e570a1f7ad78f25480dbc9f3f140",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The formatted prefix is embedded inside the LIKE expression. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The formatted prefix is embedded inside the LIKE expression. If the value is untrusted, it may alter the query structure.",
       "remediation": "Bind the entire LIKE pattern: execute(\"SELECT sku FROM products WHERE title LIKE ?\", (prefix + \"%\",)). Decide separately whether caller-supplied LIKE wildcards are intended.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -317,7 +317,7 @@
       },
       "fixed_source": "def search_products(cursor, prefix):\n    return cursor.execute(\"SELECT sku FROM products WHERE title LIKE ?\", (prefix + \"%\",)).fetchall()\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "If the query performs a LIKE search, bind the complete search pattern as a value. Decide separately whether caller-supplied percent and underscore wildcards should be interpreted or matched literally.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -359,12 +359,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def list_teams(cursor, names):\n    quoted = \",\".join(\"'\" + name + \"'\" for name in names)\n    query = \"SELECT team_id FROM teams WHERE team_name IN (\" + quoted + \")\"\n    return cursor.execute(query).fetchall()\n",
-      "source_sha256": "ad62777b6a1e1ffe2d82e8b76383afa80ddd1c7d4c52b745b6080f8937b7a1d3",
+      "source": "def list_teams(cursor, names):\n    quoted = \",\".join(\"'\" + name + \"'\" for name in names)\n    return cursor.execute(\"SELECT team_id FROM teams WHERE team_name IN (\" + quoted + \")\").fetchall()\n",
+      "source_sha256": "4d10d07734e08ef0b4726d090d747ef92e3883f113e917141a8150b34f21864b",
       "evidence_lines": [
-        4
+        3
       ],
-      "rationale": "At line 4, execution uses dynamically constructed SQL. The IN clause contains joined name values rather than bound parameters. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 3, execution uses dynamically constructed SQL. The IN clause contains joined name values rather than bound parameters. If the value is untrusted, it may alter the query structure.",
       "remediation": "Build only a comma-separated sequence of ? placeholders from the number of names, pass tuple(names) separately, and handle the empty list explicitly.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -387,7 +387,7 @@
       },
       "fixed_source": "def list_teams(cursor, names):\n    if not names:\n        return []\n    placeholders = \",\".join(\"?\" for _ in names)\n    query = \"SELECT team_id FROM teams WHERE team_name IN (\" + placeholders + \")\"\n    return cursor.execute(query, tuple(names)).fetchall()\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 4 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "If this is an IN query, build only the required number of ? placeholders and bind the values separately. Handle an empty list explicitly and never concatenate quoted input values.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -429,12 +429,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def list_invoices(cursor, sort_field):\n    query = f\"SELECT invoice_id, total FROM invoices ORDER BY {sort_field}\"\n    return cursor.execute(query).fetchall()\n",
-      "source_sha256": "281e4983c1d63ff2ad038fda2b7097f13f3903dde87c092035e99426dd9d9002",
+      "source": "def list_invoices(cursor, sort_field):\n    return cursor.execute(f\"SELECT invoice_id, total FROM invoices ORDER BY {sort_field}\").fetchall()\n",
+      "source_sha256": "a72e389fb2d8dafd47590660b916829e956aa18b543f05618c8c19d144a5075d",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The requested sort field is inserted into SQL identifier syntax. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The requested sort field is inserted into SQL identifier syntax. If the value is untrusted, it may alter the query structure.",
       "remediation": "Map accepted sort choices to fixed column names and reject unknown choices. A value placeholder cannot stand in for a column identifier.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -457,7 +457,7 @@
       },
       "fixed_source": "def list_invoices(cursor, sort_field):\n    columns = {\"id\": \"invoice_id\", \"amount\": \"total\"}\n    if sort_field not in columns:\n        raise ValueError(\"Unsupported sort field\")\n    query = \"SELECT invoice_id, total FROM invoices ORDER BY \" + columns[sort_field]\n    return cursor.execute(query).fetchall()\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "If dynamic SQL identifiers are needed, map accepted choices to a fixed allowlist of column names and reject unknown choices. Value placeholders cannot substitute for column identifiers.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
@@ -499,12 +499,12 @@
       "language": "python",
       "label": "vulnerable",
       "cwe": "CWE-89",
-      "source": "def recent_events(cursor, limit_text):\n    query = \"SELECT event_id FROM events ORDER BY event_id DESC LIMIT \" + limit_text\n    return cursor.execute(query).fetchall()\n",
-      "source_sha256": "2e02aa04a1488aa756737d45faa4b7a49e92f26e0ca3d19bda6fd0520caa394c",
+      "source": "def recent_events(cursor, limit_text):\n    return cursor.execute(\"SELECT event_id FROM events ORDER BY event_id DESC LIMIT \" + limit_text).fetchall()\n",
+      "source_sha256": "9c178a763d126306a437dfa8bf7994df3d1ec9c78a27ef63ee35f88f27441692",
       "evidence_lines": [
-        3
+        2
       ],
-      "rationale": "At line 3, execution uses dynamically constructed SQL. The LIMIT text is concatenated into the statement as SQL syntax. If the value is untrusted, it may alter the query structure.",
+      "rationale": "At line 2, execution uses dynamically constructed SQL. The LIMIT text is concatenated into the statement as SQL syntax. If the value is untrusted, it may alter the query structure.",
       "remediation": "Parse the limit as an integer, enforce the documented range, and bind it using LIMIT ? rather than concatenation. Handle invalid input at the caller.",
       "limitation": "Check where the interpolated value originates and whether earlier validation restricts it. The bounded finding excerpt does not establish attacker control or application exploitability.",
       "author": "codex-author",
@@ -527,7 +527,7 @@
       },
       "fixed_source": "def recent_events(cursor, limit_text):\n    limit = int(limit_text)\n    if not 1 <= limit <= 100:\n        raise ValueError(\"Limit must be between 1 and 100\")\n    return cursor.execute(\"SELECT event_id FROM events ORDER BY event_id DESC LIMIT ?\", (limit,)).fetchall()\n",
       "explanation_target": {
-        "explanation": "The supplied finding flags SQL execution at line 3 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
+        "explanation": "The supplied finding flags SQL execution at line 2 as receiving dynamically constructed SQL. If untrusted values are inserted into that SQL text, they may change the query structure. The execution excerpt alone does not establish the origin of those values.",
         "remediation": "If the query accepts a row limit, parse and bound it as an integer and bind it as a value where supported. Preserve the intended ordering and handle invalid input explicitly.",
         "limitation": "Inspect query construction and the origin of dynamic values before confirming this finding. Fixed fragments, bound values, or a strict identifier allowlist can change the assessment; test the proposed fix against intended behavior."
       }
