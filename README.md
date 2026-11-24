@@ -4,7 +4,6 @@
 
 <h1>EvidenceGuard</h1>
 
-<hr>
 
 <p><strong>Find risky code. Inspect the evidence. Review the fix.</strong></p>
 
